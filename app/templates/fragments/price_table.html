@@ -1,0 +1,17 @@
+{% if columns is defined and columns == ['name', 'chaos_value'] %}
+    {% for item in items %}
+    <tr>
+        <td>
+            <a href="/currency/{{ item.name }}?lang={{ locale }}" class="text-decoration-none text-light">{{ item.name }}</a>
+            {% if item.low_confidence %}
+            <span class="badge bg-warning text-dark ms-1" title="Low confidence">LC</span>
+            {% endif %}
+        </td>
+        <td class="text-end">{{ "%.1f"|format(item.chaos_value) if item.chaos_value else '—' }}</td>
+    </tr>
+    {% else %}
+    <tr><td colspan="2" class="text-center text-muted">{{ _("No data available yet.", locale) }}</td></tr>
+    {% endfor %}
+{% else %}
+    {% include "fragments/item_table_rows.html" %}
+{% endif %}

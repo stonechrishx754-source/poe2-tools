@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+
+{% block title %}{{ _("Gems", locale) }} — POE2 Analytics{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h2>{{ _("Gem Prices", locale) }}</h2>
+    <span class="badge bg-warning">{{ _("League", locale) }}: {{ league }}</span>
+</div>
+
+<ul class="nav nav-tabs nav-tabs-dark mb-3" x-data="{ active: '{{ current_type }}' }">
+    <li class="nav-item">
+        <a class="nav-link {% if current_type == 'all' %}active{% endif %}"
+           :class="{ 'active': active === 'all' }"
+           href="/gems?lang={{ locale }}" @click.prevent="active='all'">
+            {{ _("All", locale) }}
+        </a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link {% if current_type == 'SkillGem' %}active{% endif %}"
+           :class="{ 'active': active === 'SkillGem' }"
+           href="/gems?lang={{ locale }}&gem_type=SkillGem" @click.prevent="active='SkillGem'">
+            {{ _("Skill Gems", locale) }}
+        </a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link {% if current_type == 'SupportGem' %}active{% endif %}"
+           :class="{ 'active': active === 'SupportGem' }"
+           href="/gems?lang={{ locale }}&gem_type=SupportGem" @click.prevent="active='SupportGem'">
+            {{ _("Support Gems", locale) }}
+        </a>
+    </li>
+</ul>
+
+<div class="table-responsive">
+    <table class="table table-dark table-hover table-striped">
+        <thead>
+            <tr>
+                <th>{{ _("Name", locale) }}</th>
+                <th>{{ _("Type", locale) }}</th>
+                <th class="text-center">{{ _("Level", locale) }}</th>
+                <th class="text-center">{{ _("Quality", locale) }}</th>
+                <th class="text-end">{{ _("Chaos Value", locale) }}</th>
+                <th class="text-end">{{ _("Listings", locale) }}</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for gem in gems %}
+            <tr>
+                <td>{{ gem.name }}</td>
+                <td><span class="badge bg-secondary">{{ gem.type }}</span></td>
+                <td class="text-center">{{ gem.level }}</td>
+                <td class="text-center">{{ gem.quality }}%</td>
+                <td class="text-end">{{ "%.1f"|format(gem.chaos_value) if gem.chaos_value else '—' }}</td>
+                <td class="text-end">{{ gem.listing_count or '—' }}</td>
+            </tr>
+            {% else %}
+            <tr><td colspan="6" class="text-center text-muted">{{ _("No data available yet.", locale) }}</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

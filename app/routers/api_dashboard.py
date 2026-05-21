@@ -1,0 +1,80 @@
+"""REST API endpoints for dashboard data (crawl status, summary)."""
+
+from fastapi import APIRouter, Depends, Query
+from sqlalchemy import desc, func, select
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.database import get_db
+from app.models.crawl_log import CrawlLog
+from app.models.currency import CurrencySnapshot
+from app.models.gem import GemSnapshot
+from app.models.item import ItemSnapshot
+from app.schemas.dashboard import CrawlStatusResponse, DashboardSummary
+from app.services.currency_service import get_or_create_league
+
+router = APIRouter()
+
+
+@router.get("/dashboard/crawl-status", response_model=list[CrawlStatusResponse])
+async def crawl_status(
+    limit: int = Query(10, le=50),
+    db: AsyncSession = Depends(get_db),
+):
+    """Get recent crawl logs."""
+    query = (
+        select(CrawlLog)
+        .order_by(desc(CrawlLog.started_at))
+        .limit(limit)
+    )
+    result = await db.execute(query)
+    logs = result.scalars().all()
+
+    return [
+        CrawlStatusResponse(
+            source=log.source,
+            status=log.status,
+            items_count=log.items_count,
+            duration_s=log.duration_s,
+            started_at=log.started_at.isoformat() if log.started_at else None,
+            error_msg=log.error_msg,
+        )
+        for log in logs
+    ]
+
+
+@router.get("/dashboard/summary", response_model=DashboardSummary)
+async def dashboard_summary(
+    league: str = Query("Fate of the Vaal"),
+    db: AsyncSession = Depends(get_db),
+):
+    """Get aggregate dashboard summary."""
+    league_obj = await get_or_create_league(db, league)
+
+    currency_count = await db.scalar(
+        select(func.count(CurrencySnapshot.id))
+        .where(CurrencySnapshot.league_id == league_obj.id)
+    )
+    item_count = await db.scalar(
+        select(func.count(ItemSnapshot.id))
+        .where(ItemSnapshot.league_id == league_obj.id)
+    )
+    gem_count = await db.scalar(
+        select(func.count(GemSnapshot.id))
+        .where(GemSnapshot.league_id == league_obj.id)
+    )
+
+    last_crawl_result = await db.execute(
+        select(CrawlLog)
+        .where(CrawlLog.source == "poe2scout", CrawlLog.status == "success")
+        .order_by(desc(CrawlLog.started_at))
+        .limit(1)
+    )
+    last_crawl = last_crawl_result.scalar_one_or_none()
+
+    return DashboardSummary(
+        total_currencies=currency_count or 0,
+        total_items=item_count or 0,
+        total_gems=gem_count or 0,
+        last_crawl=last_crawl.started_at.isoformat() if last_crawl else None,
+        active_league=league,
+    )

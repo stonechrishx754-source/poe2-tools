@@ -1,0 +1,37 @@
+<canvas id="chart-{{ entity|replace(' ', '_') }}" height="80"></canvas>
+<script>
+    (function() {
+        const data = {{ history|tojson|safe }};
+        if (!data || data.length === 0) {
+            document.getElementById('chart-{{ entity|replace(" ", "_") }}').parentElement.innerHTML =
+                '<p class="text-muted text-center">No history data yet.</p>';
+            return;
+        }
+
+        const ctx = document.getElementById('chart-{{ entity|replace(" ", "_") }}').getContext('2d');
+        new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: data.map(p => new Date(p.recorded_at).toLocaleDateString()),
+                datasets: [{
+                    label: 'Chaos Value',
+                    data: data.map(p => p.price_chaos),
+                    borderColor: '#0dcaf0',
+                    backgroundColor: 'rgba(13, 202, 240, 0.1)',
+                    fill: true,
+                    tension: 0.3,
+                    pointRadius: 2,
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false } },
+                scales: {
+                    x: { ticks: { color: '#6c757d', maxTicksLimit: 8, display: false } },
+                    y: { ticks: { color: '#6c757d' }, grid: { color: 'rgba(255,255,255,0.05)' } }
+                }
+            }
+        });
+    })();
+</script>
