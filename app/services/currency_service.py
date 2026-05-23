@@ -1,5 +1,6 @@
 """Currency & league service — save & query price data from poe2scout."""
 
+import json
 import logging
 from datetime import datetime, timezone
 from typing import Any
@@ -12,6 +13,21 @@ from app.models.league import League
 from app.models.price_history import PriceHistory
 
 logger = logging.getLogger(__name__)
+
+EXCLUDED_CURRENCIES = {
+    "chance shard", "transmutation shard", "regal shard",
+    "ancient shard", "mirror shard", "artificer's shard",
+}
+
+
+def is_currency_excluded(name: str) -> bool:
+    """Return True if a currency should be excluded from the main listing."""
+    name_lower = name.lower()
+    if name_lower in EXCLUDED_CURRENCIES:
+        return True
+    if "greater" in name_lower or "perfect" in name_lower:
+        return True
+    return False
 
 
 # ── League ──
@@ -91,7 +107,7 @@ async def save_poe2scout_currencies(
                     chaos_equivalent=float(chaos_val) if chaos_val else 0,
                     low_confidence=curr.get("lowConfidence", False),
                     snapshot_at=snapshot_at,
-                    details_json=str(curr),
+                    details_json=json.dumps(curr),
                 )
                 db.add(snap)
                 count += 1
@@ -105,8 +121,6 @@ async def save_poe2scout_currencies(
 
 async def get_latest_prices(db: AsyncSession, league_id: int) -> list[dict]:
     """Get the most recent currency snapshot for each currency name."""
-    from sqlalchemy import and_
-
     subq = (
         select(
             CurrencySnapshot.currency_name,

@@ -76,7 +76,7 @@ a:hover { text-decoration: underline; }
 footer { font-size: .75rem; color: var(--muted); border-color: var(--border) !important; }
 
 /* Icons */
-.icon-sm { width: 24px; height: 24px; }
+.icon-sm { width: 24px; height: 24px; object-fit: contain; }
 .icon-col { width: 36px; }
 
 /* HTMX */

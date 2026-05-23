@@ -11,6 +11,8 @@ from app.models.currency import CurrencySnapshot
 from app.services.currency_service import (
     get_latest_prices,
     get_or_create_league,
+    get_price_history,
+    is_currency_excluded,
 )
 from app.services.item_service import get_latest_items, get_latest_gems
 from app.template_setup import create_templates
@@ -82,58 +84,31 @@ async def currency_page(
         sort_by="chaos_value", order="desc", limit=100,
     )
 
-    # Compute real chaos-equivalent values using known exchange rates
-    # The Items API CurrentPrice is an abstract index.
-    # We normalize using the divine:chaos ratio from league data.
-    # 1 Divine ≈ ChaosDivinePrice Chaos (tracked via scheduler from poe2scout leagues API)
-
-    # Find the reference items
+    # Normalize currency prices against Chaos Orb as the base value.
+    # The API's CurrentPrice is an abstract index; dividing each by the Chaos Orb's
+    # index gives the real chaos-equivalent value. Divine Orb ratio is verified
+    # against the League API's ChaosDivinePrice field.
     chaos_ref = next((i for i in raw_items if i["name"].lower() == "chaos orb"), None)
     divine_ref = next((i for i in raw_items if i["name"].lower() == "divine orb"), None)
-    exalted_ref = next((i for i in raw_items if i["name"].lower() == "exalted orb"), None)
 
-    # Get ChaosDivinePrice from crawl_log stored values, or compute from items
-    if chaos_ref and divine_ref and divine_ref.get("chaos_value") and chaos_ref.get("chaos_value"):
-        # The stored 'chaos_value' is actually the API's CurrentPrice (abstract index)
-        # Real chaos = item_cp / chaos_cp ... NO, we need inverted: chaos_cp / item_cp for some items
-        # For divine: chaos_cp / divine_cp = a small fraction, but we know 1 divine ≈ 40 chaos
-        # Actually: divine_cp / chaos_cp = the chaos:divine ratio (from the API data analysis)
-        index_base = chaos_ref["chaos_value"]  # Chaos Orb's CurrentPrice
-        if index_base and index_base > 0:
-            for item in raw_items:
-                cp = item.get("chaos_value")  # This is actually CurrentPrice from API
-                if cp and index_base:
-                    # Real chaos value: (CurrentPrice_item / CurrentPrice_chaos) is the ratio
-                    # For divine: divine_cp / chaos_cp = chaos_divine_ratio
-                    # So real chaos value = chaos_cp / item_cp (inverted)
-                    # BUT we want item_cp / chaos_cp for display
-                    item["chaos_value_real"] = round(cp / index_base, 4)
-                else:
-                    item["chaos_value_real"] = None
-        else:
-            for item in raw_items:
-                item["chaos_value_real"] = item.get("chaos_value")
+    index_base = chaos_ref.get("chaos_value") if chaos_ref else None
+    if index_base:
+        for item in raw_items:
+            cp = item.get("chaos_value")
+            item["chaos_value_real"] = round(cp / index_base, 4) if cp else None
 
-    # Divine price (in chaos) for reference
     divine_chaos = None
-    if divine_ref and chaos_ref:
+    if divine_ref and index_base:
         dc_val = divine_ref.get("chaos_value")
-        cc_val = chaos_ref.get("chaos_value")
-        if dc_val and cc_val:
-            divine_chaos = round(dc_val / cc_val, 2)
+        divine_chaos = round(dc_val / index_base, 2) if dc_val else None
 
-    # Exalted price (in chaos)
-    exalted_chaos = None
-    if exalted_ref and chaos_ref:
-        ec_val = exalted_ref.get("chaos_value")
-        cc_val = chaos_ref.get("chaos_value")
-        if ec_val and cc_val:
-            exalted_chaos = round(ec_val / cc_val, 2)
+    # Filter out shards and essence tiers (logic moved from template)
+    raw_items = [i for i in raw_items if not is_currency_excluded(i.get("name", ""))]
 
     return templates.TemplateResponse(
         request, "currency.html",
         _ctx(request, league=league, items=raw_items,
-             divine_chaos=divine_chaos, exalted_chaos=exalted_chaos),
+             divine_chaos=divine_chaos),
     )
 
 
@@ -154,7 +129,6 @@ async def currency_detail(
             _ctx(request, league=league, currency=None, error=err),
         )
 
-    from app.services.currency_service import get_price_history
     history = await get_price_history(db, league_obj.id, name, days=14)
 
     return templates.TemplateResponse(
@@ -263,7 +237,6 @@ async def price_chart_fragment(
 ):
     league = _active_league(request)
     league_obj = await get_or_create_league(db, league)
-    from app.services.currency_service import get_price_history
     history = await get_price_history(db, league_obj.id, entity, days=days)
 
     return templates.TemplateResponse(
