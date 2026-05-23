@@ -1,4 +1,4 @@
-<canvas id="chart-{{ entity|replace(' ', '_') }}" height="80"></canvas>
+<canvas id="chart-{{ entity|replace(' ', '_') }}" height="80" aria-label="Price chart" role="img"></canvas>
 <script>
     (function() {
         const data = {{ history|tojson|safe }};
@@ -16,8 +16,8 @@
                 datasets: [{
                     label: 'Chaos Value',
                     data: data.map(p => p.price_chaos),
-                    borderColor: '#0dcaf0',
-                    backgroundColor: 'rgba(13, 202, 240, 0.1)',
+                    borderColor: getComputedStyle(document.documentElement).getPropertyValue('--chart-line').trim(),
+                    backgroundColor: getComputedStyle(document.documentElement).getPropertyValue('--chart-fill').trim(),
                     fill: true,
                     tension: 0.3,
                     pointRadius: 2,
@@ -28,8 +28,8 @@
                 maintainAspectRatio: false,
                 plugins: { legend: { display: false } },
                 scales: {
-                    x: { ticks: { color: '#6c757d', maxTicksLimit: 8, display: false } },
-                    y: { ticks: { color: '#6c757d' }, grid: { color: 'rgba(255,255,255,0.05)' } }
+                    x: { ticks: { maxTicksLimit: 8, display: false } },
+                    y: { ticks: { }, grid: { color: 'rgba(255,255,255,0.05)' } }
                 }
             }
         });
