@@ -1,100 +1,89 @@
 {% extends "base.html" %}
-
-{% block title %}Dashboard — POE2 Analytics{% endblock %}
+{% block title %}{{ _("Dashboard", locale) }} — POE2 Analytics{% endblock %}
 
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mb-4">
-    <h2>{{ _("Dashboard", locale) }}</h2>
-    <div>
-        <span class="badge bg-info me-2">{{ _("League", locale) }}: {{ league }}</span>
-        <span class="badge bg-secondary">{{ total_entries }} {{ _("entries", locale) }}</span>
-    </div>
+    <h1 class="page-title mb-4">{{ _("Dashboard", locale) }}</h1>
+    <button class="btn btn-sm btn-outline-secondary"
+            hx-get="/api/v1/dashboard/summary"
+            hx-target="#dashboard-stats"
+            hx-swap="innerHTML"
+            aria-label="Refresh data">Refresh</button>
 </div>
 
-<div class="row g-3 mb-4">
-    <div class="col-md-3">
-        <div class="card bg-dark border-info h-100">
-            <div class="card-body text-center">
-                <h6 class="card-subtitle text-info mb-2">{{ _("Currency", locale) }}</h6>
-                <a href="/currency?lang={{ locale }}" class="stretched-link text-decoration-none">
-                    <span class="display-6 text-light" id="currency-count">—</span>
-                </a>
+<!-- Stats row -->
+<div class="row g-3 mb-5" id="dashboard-stats">
+    <div class="col-6 col-md-3">
+        <div class="card card-stat">
+            <div class="value" id="currency-count">
+                <div class="skeleton skeleton-value mx-auto"></div>
             </div>
+            <div class="label">{{ _("Currency", locale) }}</div>
         </div>
     </div>
-    <div class="col-md-3">
-        <div class="card bg-dark border-success h-100">
-            <div class="card-body text-center">
-                <h6 class="card-subtitle text-success mb-2">{{ _("Unique Items", locale) }}</h6>
-                <a href="/items?lang={{ locale }}" class="stretched-link text-decoration-none">
-                    <span class="display-6 text-light" id="item-count">—</span>
-                </a>
+    <div class="col-6 col-md-3">
+        <div class="card card-stat">
+            <div class="value" id="item-count">
+                <div class="skeleton skeleton-value mx-auto"></div>
             </div>
+            <div class="label">{{ _("Items", locale) }}</div>
         </div>
     </div>
-    <div class="col-md-3">
-        <div class="card bg-dark border-warning h-100">
-            <div class="card-body text-center">
-                <h6 class="card-subtitle text-warning mb-2">{{ _("Gems", locale) }}</h6>
-                <a href="/gems?lang={{ locale }}" class="stretched-link text-decoration-none">
-                    <span class="display-6 text-light" id="gem-count">—</span>
-                </a>
+    <div class="col-6 col-md-3">
+        <div class="card card-stat">
+            <div class="value" id="gem-count">
+                <div class="skeleton skeleton-value mx-auto"></div>
             </div>
+            <div class="label">{{ _("Gems", locale) }}</div>
         </div>
     </div>
-    <div class="col-md-3">
-        <div class="card bg-dark border-secondary h-100">
-            <div class="card-body text-center">
-                <h6 class="card-subtitle text-secondary mb-2">{{ _("Last Crawl", locale) }}</h6>
-                <span class="h5 text-light" id="last-crawl">
-                    {% if last_crawl %}{{ last_crawl.started_at.strftime('%H:%M') }}{% else %}—{% endif %}
-                </span>
-                <div class="small text-muted mt-1">{{ last_crawl.items_count or 0 }} {{ _("entries", locale) }}</div>
+    <div class="col-6 col-md-3">
+        <div class="card card-stat">
+            <div class="value" id="last-updated">
+                <div class="skeleton skeleton-value mx-auto"></div>
             </div>
+            <div class="label">{{ _("Updated", locale) }}</div>
         </div>
     </div>
 </div>
 
+<!-- Quick nav -->
 <div class="row g-3">
     <div class="col-md-4">
-        <div class="card bg-dark border-secondary">
-            <div class="card-header border-secondary"><h5 class="mb-0">{{ _("Currency", locale) }}</h5></div>
-            <div class="card-body">
-                <p class="card-text text-muted">{{ _("Live prices for currency orbs, fragments, and more.", locale) }}</p>
-                <a href="/currency?lang={{ locale }}" class="btn btn-outline-info btn-sm">{{ _("View Currency", locale) }} →</a>
+        <a href="/currency?lang={{ locale }}" class="text-decoration-none">
+            <div class="card p-4 nav-card">
+                <div class="section-title">{{ _("Currency", locale) }}</div>
+                <div class="text-muted mt-1 text-meta">{{ _("Live prices for currency orbs, fragments, and more.", locale) }}</div>
             </div>
-        </div>
+        </a>
     </div>
     <div class="col-md-4">
-        <div class="card bg-dark border-secondary">
-            <div class="card-header border-secondary"><h5 class="mb-0">{{ _("Unique Items", locale) }}</h5></div>
-            <div class="card-body">
-                <p class="card-text text-muted">{{ _("Prices for unique armours, weapons, jewels, and flasks.", locale) }}</p>
-                <a href="/items?lang={{ locale }}" class="btn btn-outline-success btn-sm">{{ _("View Items", locale) }} →</a>
+        <a href="/items?lang={{ locale }}" class="text-decoration-none">
+            <div class="card p-4 nav-card">
+                <div class="section-title">{{ _("Items", locale) }}</div>
+                <div class="text-muted mt-1 text-meta">{{ _("Prices for unique armours, weapons, jewels, and flasks.", locale) }}</div>
             </div>
-        </div>
+        </a>
     </div>
     <div class="col-md-4">
-        <div class="card bg-dark border-secondary">
-            <div class="card-header border-secondary"><h5 class="mb-0">{{ _("Gems", locale) }}</h5></div>
-            <div class="card-body">
-                <p class="card-text text-muted">{{ _("Prices for skill and support gems by level and quality.", locale) }}</p>
-                <a href="/gems?lang={{ locale }}" class="btn btn-outline-warning btn-sm">{{ _("View Gems", locale) }} →</a>
+        <a href="/gems?lang={{ locale }}" class="text-decoration-none">
+            <div class="card p-4 nav-card">
+                <div class="section-title">{{ _("Gems", locale) }}</div>
+                <div class="text-muted mt-1 text-meta">{{ _("Prices for skill and support gems by level and quality.", locale) }}</div>
             </div>
-        </div>
+        </a>
     </div>
 </div>
 {% endblock %}
 
 {% block scripts %}
 <script>
-    fetch('/api/v1/dashboard/summary?league={{ league }}')
-        .then(r => r.json())
-        .then(data => {
-            document.getElementById('currency-count').textContent = data.total_currencies || 0;
-            document.getElementById('item-count').textContent = data.total_items || 0;
-            document.getElementById('gem-count').textContent = data.total_gems || 0;
-        })
-        .catch(() => {});
+fetch('/api/v1/dashboard/summary?league={{ league }}')
+    .then(r => r.json())
+    .then(data => {
+        document.getElementById('currency-count').textContent = data.total_currencies || 0;
+        document.getElementById('item-count').textContent = data.total_items || 0;
+        document.getElementById('gem-count').textContent = data.total_gems || 0;
+    });
 </script>
 {% endblock %}
