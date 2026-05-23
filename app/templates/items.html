@@ -1,84 +1,45 @@
 {% extends "base.html" %}
-
-{% block title %}{{ _("Unique Items", locale) }} — POE2 Analytics{% endblock %}
+{% block title %}{{ _("Items", locale) }} — POE2 Analytics{% endblock %}
 
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mb-3">
-    <h2>{{ _("Live Market Data", locale) }}</h2>
-    <span class="badge bg-success">{{ _("League", locale) }}: {{ league }}</span>
+    <h1 class="page-title mb-3">{{ _("Items", locale) }}</h1>
+    <div class="d-flex gap-2 align-items-center">
+        <input type="text"
+       class="form-control form-control-dark"
+       placeholder="Search items..."
+       aria-label="Search items"
+       oninput="if(window._ti)clearTimeout(window._ti);window._ti=setTimeout(()=>{const v=this.value.toLowerCase();document.querySelectorAll('#item-table-body tr').forEach(r=>{r.hidden=v&&!r.textContent.toLowerCase().includes(v)})},200)">
+    </div>
 </div>
 
-<!-- Category Tabs -->
-<ul class="nav nav-tabs nav-tabs-dark mb-3" x-data="{ active: '{{ current_type }}' }">
+<!-- Category tabs -->
+<ul class="nav nav-tabs mb-3">
     <li class="nav-item">
         <a class="nav-link {% if current_type == 'all' %}active{% endif %}"
-           :class="{ 'active': active === 'all' }"
-           href="/items?lang={{ locale }}" @click.prevent="active='all'">
-            {{ _("All", locale) }}
-        </a>
+           href="/items?lang={{ locale }}">{{ _("All", locale) }}</a>
     </li>
-    {% for cat in cat_order %}
-        {% if cat not in ('Unknown', 'currency', 'gem', 'gems') %}
-        <li class="nav-item">
-            <a class="nav-link {% if current_type == cat %}active{% endif %}"
-               :class="{ 'active': active === '{{ cat }}' }"
-               href="/items?lang={{ locale }}&item_type={{ cat }}"
-               @click.prevent="active='{{ cat }}'; htmx.ajax('GET', '/fragments/price-table?lang={{ locale }}&type=items&item_type={{ cat }}', {target:'#item-table-body'})">
-                {{ _(cat_name(cat, cat) or cat, locale) }}
-            </a>
-        </li>
-        {% endif %}
+    {% for cat in ['armour', 'weapon', 'accessory', 'jewel', 'flask', 'map', 'currency', 'fragments'] %}
+    <li class="nav-item">
+        <a class="nav-link {% if current_type == cat %}active{% endif %}"
+           href="/items?lang={{ locale }}&item_type={{ cat }}">{{ _(cat_name(cat, cat) or cat, locale) }}</a>
+    </li>
     {% endfor %}
-    <!-- Currency & Gem tabs -->
-    <li class="nav-item">
-        <a class="nav-link {% if current_type == 'currency' %}active{% endif %}"
-           :class="{ 'active': active === 'currency' }"
-           href="/items?lang={{ locale }}&item_type=currency"
-           @click.prevent="active='currency'; htmx.ajax('GET', '/fragments/price-table?lang={{ locale }}&type=items&item_type=currency', {target:'#item-table-body'})">
-            {{ _("Currency", locale) }}
-        </a>
-    </li>
-    <li class="nav-item">
-        <a class="nav-link {% if current_type == 'fragments' %}active{% endif %}"
-           :class="{ 'active': active === 'fragments' }"
-           href="/items?lang={{ locale }}&item_type=fragments"
-           @click.prevent="active='fragments'; htmx.ajax('GET', '/fragments/price-table?lang={{ locale }}&type=items&item_type=fragments', {target:'#item-table-body'})">
-            {{ _("Fragments", locale) }}
-        </a>
-    </li>
 </ul>
 
-<!-- Search -->
-<div class="mb-3" x-data="{ search: '' }">
-    <input type="text" class="form-control form-control-dark bg-dark text-light border-secondary"
-           placeholder="{{ _('Search', locale) }}..."
-           x-model="search"
-           x-effect="if(search.length > 0) {
-               document.querySelectorAll('#item-table-body tr').forEach(r => {
-                   const name = (r.querySelector('td:nth-child(2)')?.textContent || '').toLowerCase();
-                   r.style.display = name.includes(search.toLowerCase()) ? '' : 'none';
-               });
-           } else {
-               document.querySelectorAll('#item-table-body tr').forEach(r => r.style.display = '');
-           }">
-</div>
-
-<!-- Items Table -->
+<!-- Items table -->
 <div class="table-responsive">
-    <table class="table table-dark table-hover table-striped">
+    <table class="table table-dark" aria-label="Items list">
         <thead>
             <tr>
                 <th></th>
                 <th>{{ _("Name", locale) }}</th>
                 <th>{{ _("Type", locale) }}</th>
-                <th class="text-end">{{ _("Chaos Value", locale) }}</th>
-                <th class="text-end">{{ _("Divine Value", locale) }}</th>
-                <th class="text-end">{{ _("Listings", locale) }}</th>
+                <th class="text-end">Chaos</th>
+                <th class="text-end">Divine</th>
             </tr>
         </thead>
-        <tbody id="item-table-body"
-               hx-get="/fragments/price-table?lang={{ locale }}&type=items{% if current_type != 'all' %}&item_type={{ current_type }}{% endif %}"
-               hx-trigger="load, every 300s">
+        <tbody id="item-table-body">
             {% include "fragments/item_table_rows.html" %}
         </tbody>
     </table>
