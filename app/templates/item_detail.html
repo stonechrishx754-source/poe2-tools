@@ -1,62 +1,92 @@
 {% extends "base.html" %}
-
-{% block title %}{% if item %}{{ item.name }} — {% endif %}Item — POE2 Analytics{% endblock %}
+{% block title %}{% if item %}{{ item.name }}{% else %}Item{% endif %} — POE2 Analytics{% endblock %}
 
 {% block content %}
 {% if error %}
-<div class="alert alert-warning">{{ error }}</div>
-<a href="/items?lang={{ locale }}" class="btn btn-outline-secondary">← {{ _("Items", locale) }}</a>
+<div class="text-muted text-center py-5">{{ error }}</div>
+<a href="/items?lang={{ locale }}" class="btn btn-sm btn-outline-secondary">← {{ _("Items", locale) }}</a>
 
 {% elif item %}
-<div class="d-flex justify-content-between align-items-center mb-3">
-    <div class="d-flex align-items-center gap-3">
+<div class="mb-4">
+    <a href="/items?lang={{ locale }}" class="text-muted small text-decoration-none">← {{ _("Items", locale) }}</a>
+    <div class="d-flex align-items-center gap-3 mt-3">
         {% if item.icon_url %}
-        <img src="{{ item.icon_url }}" alt="{{ item.name }}" style="width: 48px; height: 48px; object-fit: contain;">
+        <img src="{{ item.icon_url }}" alt="" style="width: 48px; height: 48px; object-fit: contain;">
         {% endif %}
-        <h2 class="mb-0">{{ item.name }}</h2>
+        <div>
+            <h1 class="page-title">{{ item.name }}</h1>
+            <span class="text-muted text-meta">{{ _(item.type, locale) if item.type else '' }} · {{ item.variant or '' }}</span>
+        </div>
     </div>
-    <a href="/items?lang={{ locale }}" class="btn btn-outline-secondary btn-sm">← {{ _("Unique Items", locale) }}</a>
 </div>
 
 <div class="row g-3 mb-4">
-    <div class="col-md-3">
-        <div class="card bg-dark border-info">
-            <div class="card-body text-center">
-                <h6 class="card-subtitle text-info">{{ _("Chaos Value", locale) }}</h6>
-                <span class="h3 text-light">{{ "%.0f"|format(item.chaos_value) if item.chaos_value else '—' }}</span>
-            </div>
+    <div class="col-sm-4">
+        <div class="card-stat">
+            <div class="value">{{ "%.0f"|format(item.chaos_value) if item.chaos_value else '—' }}</div>
+            <div class="label">Chaos</div>
         </div>
     </div>
-    <div class="col-md-3">
-        <div class="card bg-dark border-warning">
-            <div class="card-body text-center">
-                <h6 class="card-subtitle text-warning">{{ _("Divine Value", locale) }}</h6>
-                <span class="h3 text-light">{{ "%.2f"|format(item.divine_value) if item.divine_value else '—' }}</span>
-            </div>
+    <div class="col-sm-4">
+        <div class="card-stat">
+            <div class="value text-divine">{{ "%.4f"|format(item.divine_value) if item.divine_value else '—' }}</div>
+            <div class="label">Divine</div>
         </div>
     </div>
-    <div class="col-md-3">
-        <div class="card bg-dark border-secondary">
-            <div class="card-body text-center">
-                <h6 class="card-subtitle text-secondary">{{ _("Type", locale) }}</h6>
-                <span class="text-light">{{ _(item.type, locale) if item.type else '—' }}</span>
-            </div>
-        </div>
-    </div>
-    <div class="col-md-3">
-        <div class="card bg-dark border-secondary">
-            <div class="card-body text-center">
-                <h6 class="card-subtitle text-secondary">{{ _("Variant", locale) }}</h6>
-                <span class="text-light">{{ item.variant or '—' }}</span>
-            </div>
+    <div class="col-sm-4">
+        <div class="card-stat">
+            <div class="value">{{ item.listing_count or '—' }}</div>
+            <div class="label">{{ _("Listings", locale) }}</div>
         </div>
     </div>
 </div>
+{% endif %}
 
-{% if item.listing_count is not none %}
-<div class="text-muted small">
-    {{ _("Listings", locale) }}: {{ item.listing_count }}
-</div>
-{% endif %}
-{% endif %}
+<section aria-label="Price history" class="mt-4">
+    <h2 class="section-title mb-3">Price History</h2>
+    <div class="card p-3">
+        <canvas id="priceChart" aria-label="Item price history chart" role="img"></canvas>
+        <div class="chart-controls">
+            <button class="active" onclick="loadChart('7d')">7d</button>
+            <button onclick="loadChart('14d')">14d</button>
+            <button onclick="loadChart('30d')">30d</button>
+        </div>
+    </div>
+</section>
+<script>
+function loadChart(range) {
+    document.querySelectorAll('.chart-controls button').forEach(b => b.classList.remove('active'));
+    event.target.classList.add('active');
+    fetch(`/api/v1/items/{{ item.id }}/chart?range=${range}`)
+        .then(r => r.json())
+        .then(data => {
+            const ctx = document.getElementById('priceChart').getContext('2d');
+            if (window._chart) window._chart.destroy();
+            window._chart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: data.labels,
+                    datasets: [{
+                        label: 'Price (Chaos)',
+                        data: data.values,
+                        borderColor: getComputedStyle(document.documentElement).getPropertyValue('--chart-line').trim(),
+                        backgroundColor: getComputedStyle(document.documentElement).getPropertyValue('--chart-fill').trim(),
+                        fill: true,
+                        tension: 0.3,
+                        pointRadius: 0
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        x: { grid: { color: getComputedStyle(document.documentElement).getPropertyValue('--chart-grid').trim() } },
+                        y: { grid: { color: getComputedStyle(document.documentElement).getPropertyValue('--chart-grid').trim() } }
+                    }
+                }
+            });
+        });
+}
+loadChart('7d');
+</script>
 {% endblock %}
