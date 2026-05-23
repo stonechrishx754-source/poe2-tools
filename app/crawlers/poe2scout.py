@@ -3,6 +3,7 @@
 import logging
 from datetime import datetime, timezone
 from typing import Any
+from urllib.parse import quote
 
 from app.config import settings
 from app.crawlers.base import BaseCrawler
@@ -41,7 +42,6 @@ class Poe2ScoutCrawler(BaseCrawler):
 
         Returns currencies grouped by category with prices.
         """
-        from urllib.parse import quote
         encoded = quote(league)
         data = await self._get(f"/{REALM}/Leagues/{encoded}/Currencies/ByCategory")
         if isinstance(data, list):
@@ -54,7 +54,6 @@ class Poe2ScoutCrawler(BaseCrawler):
 
         Returns exchange rate snapshot with volume and market cap.
         """
-        from urllib.parse import quote
         encoded = quote(league)
         data = await self._get(f"/{REALM}/Leagues/{encoded}/ExchangeSnapshot")
         if isinstance(data, dict):
@@ -66,7 +65,6 @@ class Poe2ScoutCrawler(BaseCrawler):
 
         Returns reference currency list with base prices.
         """
-        from urllib.parse import quote
         encoded = quote(league)
         data = await self._get(f"/{REALM}/Leagues/{encoded}/ReferenceCurrencies")
         if isinstance(data, list):
@@ -78,7 +76,6 @@ class Poe2ScoutCrawler(BaseCrawler):
 
         Returns all items with current prices.
         """
-        from urllib.parse import quote
         encoded = quote(league)
         data = await self._get(f"/{REALM}/Leagues/{encoded}/Items")
         if isinstance(data, list):
@@ -106,7 +103,6 @@ class Poe2ScoutCrawler(BaseCrawler):
 
     async def fetch_item_categories(self, league: str) -> list[str]:
         """GET /{Realm}/Leagues/{LeagueName}/Items/Categories."""
-        from urllib.parse import quote
         encoded = quote(league)
         data = await self._get(f"/{REALM}/Leagues/{encoded}/Items/Categories")
         if isinstance(data, list):
@@ -114,32 +110,12 @@ class Poe2ScoutCrawler(BaseCrawler):
         return []
 
     async def fetch_all(self, league: str) -> dict[str, int]:
-        """Fetch all data for a league. Returns counts per category."""
-        now = datetime.now(timezone.utc)
+        """Convenience: fetch currency + item + exchange data and return counts."""
         counts: dict[str, int] = {}
-
-        # Currencies
         currencies = await self.fetch_currencies_by_category(league)
         counts["currencies"] = len(currencies)
-
-        # Uniques
-        uniques = await self.fetch_uniques_by_category(league)
-        counts["uniques"] = len(uniques)
-
-        # All items (for item overview)
         items = await self.fetch_items(league)
         counts["items"] = len(items)
-
-        # Reference currencies (for exchange rates)
-        ref_currencies = await self.fetch_reference_currencies(league)
-        counts["reference_currencies"] = len(ref_currencies)
-
-        # Exchange snapshot
         exchange = await self.fetch_exchange_snapshot(league)
         counts["exchange_available"] = 1 if exchange else 0
-
-        logger.info(
-            "poe2scout fetch_all for '%s' complete: %s",
-            league, counts,
-        )
         return counts

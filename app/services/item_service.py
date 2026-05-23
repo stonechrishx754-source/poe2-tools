@@ -1,5 +1,6 @@
 """Item & Gem service — save & query price data from poe2scout."""
 
+import json
 import logging
 from datetime import datetime, timezone
 from typing import Any
@@ -49,9 +50,9 @@ async def save_poe2scout_items(
             chaos_value=float(chaos_value) if chaos_value else None,
             low_confidence=False,
             listing_count=item.get("ListingCount", item.get("listingCount")),
-            variant=item.get("Type", item.get("type"))[:64] if item.get("Type") else None,
+            variant=(item.get("Type") or item.get("type") or "")[:64] or None,
             icon_url=item.get("IconUrl", item.get("iconUrl")),
-            details_json=str(item),
+            details_json=json.dumps(item),
             snapshot_at=snapshot_at,
         )
         db.add(snap)
@@ -104,8 +105,8 @@ async def save_poe2scout_uniques(
                 chaos_value=float(chaos_value) if chaos_value else None,
                 low_confidence=False,
                 listing_count=item.get("ListingCount"),
-                variant=item.get("Type", item.get("type"))[:64] if item.get("Type") else None,
-                details_json=str(item),
+                variant=(item.get("Type") or item.get("type") or "")[:64] or None,
+                details_json=json.dumps(item),
                 snapshot_at=snapshot_at,
             )
             db.add(snap)

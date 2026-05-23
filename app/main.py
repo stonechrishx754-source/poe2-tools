@@ -9,23 +9,20 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI, Request
 from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
-from fastapi.templating import Jinja2Templates
-from sqlalchemy import select, desc
-from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.database import engine, get_db
+from app.database import engine
 from app.models.base import Base
 from app.routers import web, api_currency, api_items, api_dashboard
 from app.scheduler import start_scheduler, stop_scheduler
+from app.template_setup import create_templates
 
-# Configure logging
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
 )
 logger = logging.getLogger(__name__)
 
-templates = Jinja2Templates(directory="app/templates")
+templates = create_templates()
 
 
 @asynccontextmanager

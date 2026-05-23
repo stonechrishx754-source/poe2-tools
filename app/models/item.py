@@ -13,7 +13,7 @@ class ItemSnapshot(Base):
 
     id: Mapped[int] = mapped_column(primary_key=True)
     league_id: Mapped[int] = mapped_column(Integer, index=True)
-    item_name: Mapped[str] = mapped_column(String(128), nullable=False)
+    item_name: Mapped[str] = mapped_column(String(128), nullable=False, index=True)
     item_type: Mapped[str] = mapped_column(String(64), nullable=False)  # UniqueArmour, UniqueWeapon, UniqueJewel, UniqueFlask, Map
     chaos_value: Mapped[float | None] = mapped_column(Float, nullable=True)
     divine_value: Mapped[float | None] = mapped_column(Float, nullable=True)
