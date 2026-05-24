@@ -200,7 +200,12 @@ async def gems_page(
 
 @router.get("/monitor", response_class=HTMLResponse)
 async def monitor_page(request: Request):
-    return templates.TemplateResponse(request, "monitor.html", _ctx(request))
+    from app.config import settings
+    poesessid_missing = not settings.GGG_POESESSID
+    return templates.TemplateResponse(
+        request, "monitor.html",
+        _ctx(request, poesessid_missing=poesessid_missing),
+    )
 
 
 @router.get("/trades", response_class=HTMLResponse)

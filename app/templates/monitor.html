@@ -2,6 +2,12 @@
 {% block title %}{{ _("Monitor", locale) }} — POE2 Analytics{% endblock %}
 
 {% block content %}
+{% if poesessid_missing %}
+<div class="toast-error mb-3" id="poesessid-warning" style="display:flex;align-items:center;justify-content:space-between;">
+    <span>{% if locale == "en" %}POESESSID not configured — monitoring disabled. Add GGG_POESESSID in .env file.{% else %}POESESSID 未配置 — 监控功能不可用。请在 .env 文件中设置 GGG_POESESSID。{% endif %}</span>
+    <button onclick="document.getElementById('poesessid-warning').remove()" style="background:none;border:1px solid var(--error);color:var(--error);padding:.25rem .75rem;border-radius:4px;cursor:pointer;">x</button>
+</div>
+{% endif %}
 <div class="d-flex justify-content-between align-items-center mb-3">
     <h1 class="page-title">{{ _("Monitor", locale) }}</h1>
     <div class="d-flex gap-2 align-items-center">
