@@ -9,6 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
 from app.models.deal_alert import DealAlert
+from app.models.item import ItemSnapshot
 from app.models.purchase_log import PurchaseLog
 from app.models.watchlist import WatchlistRule
 
@@ -206,3 +207,47 @@ async def mark_purchased(
     db.add(log)
     await db.commit()
     return {"id": deal.id, "status": "purchased"}
+
+
+@router.get("/deals/{deal_id}/detail")
+async def deal_detail(deal_id: int, db: AsyncSession = Depends(get_db)):
+    """Get deal detail with price history and similar items."""
+    result = await db.execute(
+        select(DealAlert).where(DealAlert.id == deal_id)
+    )
+    deal = result.scalar_one_or_none()
+    if not deal:
+        return JSONResponse({"error": "Not found"}, 404)
+
+    # Price history (last 7 days)
+    from datetime import datetime, timezone, timedelta
+    cutoff = datetime.now(timezone.utc) - timedelta(days=7)
+    history_result = await db.execute(
+        select(ItemSnapshot)
+        .where(
+            ItemSnapshot.item_name == deal.item_name,
+            ItemSnapshot.snapshot_at >= cutoff,
+        )
+        .order_by(ItemSnapshot.snapshot_at.asc())
+    )
+    history = [
+        {"snapshot_at": h.snapshot_at.isoformat(), "chaos_value": h.chaos_value}
+        for h in history_result.scalars().all()
+    ]
+
+    # Similar items (cheapest current listings for same item name)
+    from app.services.item_service import get_latest_items
+    league_id = 1
+    similar = [i for i in await get_latest_items(db, league_id, limit=20)
+               if i["name"] == deal.item_name][:5]
+
+    return {
+        "deal": {
+            "id": deal.id, "item_name": deal.item_name,
+            "price_amount": deal.price_amount, "price_currency": deal.price_currency,
+            "market_avg": deal.market_avg, "discount_pct": deal.discount_pct,
+            "seller_account": deal.seller_account,
+        },
+        "history": history,
+        "similar": similar,
+    }

@@ -131,6 +131,37 @@ function toggleRule(id, active) {
         .then(() => loadRules());
 }
 
+function showDealDetail(d, card) {
+    var existing = card.nextElementSibling;
+    if (existing && existing.classList.contains('deal-detail-panel')) {
+        existing.remove();
+        return;
+    }
+    var panel = document.createElement('div');
+    panel.className = 'p-3 rounded mb-2 deal-detail-panel';
+    panel.style.cssText = 'background:var(--surface);border:1px solid var(--border);';
+    var labels = d.history.map(function(h) { return new Date(h.snapshot_at).toLocaleDateString(); });
+    var data = d.history.map(function(h) { return h.chaos_value; });
+    var similarHtml = d.similar.map(function(s) {
+        return '<div class="d-flex justify-content-between" style="font-size:.8rem;"><span>' + s.name + '</span><span>' + (s.chaos_value||0).toFixed(0) + 'c</span></div>';
+    }).join('');
+    panel.innerHTML = '<div class="d-flex justify-content-between mb-2">' +
+        '<strong>' + d.deal.item_name + '</strong>' +
+        '<button class="btn btn-sm btn-outline-secondary" onclick="this.parentElement.parentElement.remove()">x</button></div>' +
+        '<canvas id="detail-chart-' + d.deal.id + '" height="60" aria-label="Price chart" role="img"></canvas>' +
+        '<div class="mt-2"><small class="text-muted">Current cheapest:</small>' + similarHtml + '</div>';
+    card.after(panel);
+    setTimeout(function() {
+        var ctx = document.getElementById('detail-chart-' + d.deal.id);
+        if (ctx) {
+            new Chart(ctx, {
+                type:'line', data:{labels:labels,datasets:[{data:data,borderColor:'#58a6ff',fill:false,pointRadius:0}]},
+                options:{responsive:true,plugins:{legend:{display:false}},scales:{x:{display:false},y:{grid:{color:'rgba(255,255,255,.03)'}}}}
+            });
+        }
+    }, 100);
+}
+
 const sse = new EventSource('/api/v1/monitor/stream');
 sse.addEventListener('new-deal', (e) => {
     const deal = JSON.parse(e.data);
@@ -160,6 +191,12 @@ sse.addEventListener('new-deal', (e) => {
     // Safely attach whisper to copy button via textContent
     card.querySelector('.deal-copy-btn').addEventListener('click', () => copyText(deal.whisper_message || ''));
     feed.insertBefore(card, feed.firstChild);
+    card.addEventListener('click', function(e) {
+        if (e.target.tagName === 'BUTTON') return;
+        fetch('/api/v1/deals/' + deal.id + '/detail')
+            .then(function(r) { return r.json(); })
+            .then(function(d) { showDealDetail(d, card); });
+    });
     // Limit DOM to 100 cards
     while (feed.children.length > 100) { feed.removeChild(feed.lastChild); }
 });
