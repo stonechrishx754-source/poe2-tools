@@ -76,13 +76,18 @@ class BaseCrawler:
             await self._client.aclose()
             self._client = None
 
-    async def fetch(self, url: str, **kwargs) -> dict[str, Any] | list[Any]:
-        """Make a rate-limited GET request with retry logic.
+    async def fetch(self, url: str, method: str = "GET", json_body: dict | None = None,
+                    extra_headers: dict | None = None, **kwargs) -> dict[str, Any] | list[Any]:
+        """Make a rate-limited request with retry logic.
 
-        Returns parsed JSON (dict or list).
+        Supports GET and POST. Returns parsed JSON (dict or list).
         Raises on final failure after exhausting retries.
         """
         last_error: Exception | None = None
+
+        headers = {"User-Agent": "POE2-Analytics/0.1"}
+        if extra_headers:
+            headers.update(extra_headers)
 
         for attempt in range(1, self.max_retries + 1):
             # Rate limit wait
@@ -90,7 +95,11 @@ class BaseCrawler:
             self._stats["requests"] += 1
 
             try:
-                response = await self.client.get(url, **kwargs)
+                client = self.client
+                if method.upper() == "POST":
+                    response = await client.post(url, json=json_body, headers=headers, **kwargs)
+                else:
+                    response = await client.get(url, headers=headers, **kwargs)
                 if response.status_code == 429:
                     retry_after = int(response.headers.get("Retry-After", "60"))
                     logger.warning(
