@@ -1,13 +1,15 @@
 """APScheduler setup — cron/interval jobs for data collection."""
 
 import logging
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
+from sqlalchemy import delete, func, select
 
 from app.config import settings
 from app.database import AsyncSessionLocal
 from app.models.crawl_log import CrawlLog
+from app.models.item import ItemSnapshot
 from app.services.currency_service import (
     get_or_create_league,
     save_poe2scout_currencies,
@@ -103,6 +105,56 @@ async def crawl_stash():
         await crawler.close()
 
 
+async def compact_price_history():
+    """Daily: aggregate item_snapshots into price_history, prune old data."""
+    from app.models.price_history import PriceHistory
+
+    today = datetime.now(timezone.utc).replace(hour=0, minute=0, second=0, microsecond=0)
+    yesterday = today - timedelta(days=1)
+    threshold = datetime.now(timezone.utc) - timedelta(days=30)
+
+    async with AsyncSessionLocal() as db:
+        result = await db.execute(
+            select(
+                ItemSnapshot.item_name,
+                ItemSnapshot.league_id,
+                func.avg(ItemSnapshot.chaos_value).label("avg_val"),
+                func.min(ItemSnapshot.chaos_value).label("min_val"),
+                func.max(ItemSnapshot.chaos_value).label("max_val"),
+                func.count(ItemSnapshot.id).label("sample_size"),
+            )
+            .where(
+                ItemSnapshot.snapshot_at >= yesterday,
+                ItemSnapshot.snapshot_at < today,
+                ItemSnapshot.chaos_value.isnot(None),
+            )
+            .group_by(ItemSnapshot.item_name, ItemSnapshot.league_id)
+        )
+        rows = result.all()
+
+        compacted = 0
+        for r in rows:
+            ph = PriceHistory(
+                league_id=r.league_id,
+                data_source="poe_ninja",
+                entity_type="item",
+                entity_name=r.item_name,
+                price_chaos=round(r.avg_val, 2),
+                sample_size=r.sample_size,
+                recorded_at=today,
+            )
+            db.add(ph)
+            compacted += 1
+
+        del_result = await db.execute(
+            delete(ItemSnapshot).where(ItemSnapshot.snapshot_at < threshold)
+        )
+        deleted = del_result.rowcount
+
+        await db.commit()
+        logger.info("Compaction: %d price_history rows, %d old snapshots deleted", compacted, deleted)
+
+
 def start_scheduler() -> AsyncIOScheduler:
     """Create, configure, and start the APScheduler instance."""
     scheduler = AsyncIOScheduler(timezone="Asia/Shanghai")
@@ -121,6 +173,14 @@ def start_scheduler() -> AsyncIOScheduler:
         "interval",
         minutes=settings.STASH_INTERVAL_MINUTES,
         id="stash_poll",
+        max_instances=1,
+        replace_existing=True,
+    )
+
+    scheduler.add_job(
+        compact_price_history,
+        "cron", hour=3, minute=0,
+        id="price_compaction",
         max_instances=1,
         replace_existing=True,
     )
