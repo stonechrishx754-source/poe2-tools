@@ -15,6 +15,7 @@ from app.services.currency_service import (
     get_price_history,
     is_currency_excluded,
 )
+from app.services.analysis_service import get_top_movers
 from app.services.item_service import get_latest_items, get_latest_gems
 from app.template_setup import create_templates
 
@@ -63,9 +64,13 @@ async def index(request: Request, db: AsyncSession = Depends(get_db)):
     )
     total_entries = count_currency.scalar() or 0
 
+    gainers = await get_top_movers(db, league_obj.id, "gainers", 5)
+    losers = await get_top_movers(db, league_obj.id, "losers", 5)
+
     return templates.TemplateResponse(
         request, "index.html",
-        _ctx(request, league=league, last_crawl=last_crawl, total_entries=total_entries),
+        _ctx(request, league=league, last_crawl=last_crawl, total_entries=total_entries,
+             top_gainers=gainers, top_losers=losers),
     )
 
 

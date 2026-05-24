@@ -1,4 +1,12 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
+
+
+class MoverItem(BaseModel):
+    item_name: str = ""
+    recent_avg: float = 0
+    prev_avg: float = 0
+    change_pct: float = 0
+    icon_url: str | None = None
 
 
 class CrawlStatusResponse(BaseModel):
@@ -16,3 +24,5 @@ class DashboardSummary(BaseModel):
     total_gems: int = 0
     last_crawl: str | None = None
     active_league: str = ""
+    top_gainers: list[MoverItem] = Field(default_factory=list)
+    top_losers: list[MoverItem] = Field(default_factory=list)

@@ -10,6 +10,7 @@ from app.models.currency import CurrencySnapshot
 from app.models.gem import GemSnapshot
 from app.models.item import ItemSnapshot
 from app.schemas.dashboard import CrawlStatusResponse, DashboardSummary
+from app.services.analysis_service import get_top_movers
 from app.services.currency_service import get_or_create_league
 
 router = APIRouter()
@@ -71,10 +72,15 @@ async def dashboard_summary(
     )
     last_crawl = last_crawl_result.scalar_one_or_none()
 
+    gainers = await get_top_movers(db, league_obj.id, "gainers", 5)
+    losers = await get_top_movers(db, league_obj.id, "losers", 5)
+
     return DashboardSummary(
         total_currencies=currency_count or 0,
         total_items=item_count or 0,
         total_gems=gem_count or 0,
         last_crawl=last_crawl.started_at.isoformat() if last_crawl else None,
         active_league=league,
+        top_gainers=gainers,
+        top_losers=losers,
     )

@@ -153,6 +153,11 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
     "Item name": {"zh": "物品名称", "en": "Item name"},
     "Type (optional)": {"zh": "类型（可选）", "en": "Type (optional)"},
     "Max price": {"zh": "最高价格", "en": "Max price"},
+
+    # Top Movers
+    "Top Gainers 24h": {"zh": "24h 涨幅榜", "en": "Top Gainers 24h"},
+    "Top Losers 24h": {"zh": "24h 跌幅榜", "en": "Top Losers 24h"},
+    "No data yet": {"zh": "暂无数据", "en": "No data yet"},
 }
 
 
