@@ -5,6 +5,7 @@ from fastapi.responses import HTMLResponse
 from sqlalchemy import select, func, desc
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.config import settings
 from app.database import get_db
 from app.models.crawl_log import CrawlLog
 from app.models.currency import CurrencySnapshot
@@ -197,6 +198,11 @@ async def monitor_page(request: Request):
     return templates.TemplateResponse(request, "monitor.html", _ctx(request))
 
 
+@router.get("/trades", response_class=HTMLResponse)
+async def trades_page(request: Request):
+    return templates.TemplateResponse(request, "trades.html", _ctx(request))
+
+
 # ── HTMX Fragments ──
 
 @router.get("/fragments/price-table", response_class=HTMLResponse)
@@ -247,4 +253,71 @@ async def price_chart_fragment(
     return templates.TemplateResponse(
         request, "fragments/price_chart.html",
         _ctx(request, entity=entity, history=history, days=days),
+    )
+
+
+@router.get("/api/v1/trade/search", response_class=HTMLResponse)
+async def trade_search_fragment(
+    request: Request,
+    name: str = Query(""),
+    item_type: str = Query(""),
+    max_price: float | None = Query(None),
+):
+    from app.crawlers.ggg_trade2 import GggTrade2Crawler
+
+    league = _active_league(request)
+    crawler = GggTrade2Crawler()
+    result = await crawler.search(league, name=name, item_type=item_type, max_price=max_price)
+    await crawler.close()
+
+    if "error" in result:
+        return HTMLResponse(
+            '<div class="text-center text-muted py-4">' + str(result["error"]) + '</div>'
+        )
+
+    items = result.get("result", [])
+    if not items:
+        return HTMLResponse(
+            '<div class="text-center text-muted py-4">No items found</div>'
+        )
+
+    query_id = result.get("id", "")
+    ids = ",".join(items[:10])
+    import httpx
+    async with httpx.AsyncClient() as c:
+        r = await c.get(
+            "https://www.pathofexile.com/api/trade2/fetch/" + ids + "?query=" + query_id,
+            cookies={"POESESSID": settings.GGG_POESESSID},
+        )
+        details = r.json().get("result", [])
+
+    rows_html = ""
+    for item in details:
+        listing = item.get("listing", {})
+        item_data = item.get("item", {})
+        price = listing.get("price", {})
+        p_amount = price.get("amount", "?")
+        p_currency = price.get("currency", "?")
+        i_name = item_data.get("name") or item_data.get("typeLine", "?")
+        i_type = item_data.get("typeLine", "")
+        seller = listing.get("account", {}).get("lastCharacterName", "?")
+        icon = item_data.get("icon", "")
+
+        rows_html += '<tr>'
+        if icon:
+            rows_html += '<td style="width:40px"><img src="' + icon + '" style="width:32px;height:32px"></td>'
+        else:
+            rows_html += '<td></td>'
+        rows_html += '<td>' + i_name + '</td>'
+        rows_html += '<td><span class="badge bg-secondary" style="font-size:.65rem;">' + i_type + '</span></td>'
+        rows_html += '<td class="text-end">' + str(p_amount) + ' ' + p_currency + '</td>'
+        rows_html += '<td class="text-end">' + seller + '</td>'
+        rows_html += '<td><button class="btn btn-sm btn-outline-info" style="font-size:.65rem;" onclick="trackItem(\'' + i_name.replace("'", "\\'") + '\', \'' + i_type.replace("'", "\\'") + '\', ' + str(p_amount) + ')">Track</button></td>'
+        rows_html += '</tr>'
+
+    return HTMLResponse(
+        '<div class="text-muted small mb-2">Found ' + str(result.get("total", 0)) + ' items</div>'
+        '<table class="table table-dark table-sm">'
+        '<thead><tr><th></th><th>Name</th><th>Type</th><th class="text-end">Price</th><th class="text-end">Seller</th><th></th></tr></thead>'
+        '<tbody>' + rows_html + '</tbody></table>'
     )

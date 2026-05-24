@@ -145,6 +145,14 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
     "OFF (badge)": {"zh": "OFF", "en": "OFF"},
     "market": {"zh": "市价", "en": "market"},
     "OFF %": {"zh": "OFF", "en": "OFF"},
+
+    # Trades
+    "Trades": {"zh": "交易", "en": "Trades"},
+    "Search for items to find deals": {"zh": "搜索物品以发现交易机会", "en": "Search for items to find deals"},
+    "Track": {"zh": "监控", "en": "Track"},
+    "Item name": {"zh": "物品名称", "en": "Item name"},
+    "Type (optional)": {"zh": "类型（可选）", "en": "Type (optional)"},
+    "Max price": {"zh": "最高价格", "en": "Max price"},
 }
 
 

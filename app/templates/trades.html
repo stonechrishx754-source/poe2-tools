@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+{% block title %}{{ _("Trades", locale) }} — POE2 Analytics{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h1 class="page-title">{{ _("Trades", locale) }}</h1>
+</div>
+
+<div class="card p-3 mb-3">
+    <div class="row g-2">
+        <div class="col-md-4">
+            <input class="form-control form-control-dark form-control-sm" id="search-name"
+                   placeholder="{{ _('Item name', locale) }}" value="">
+        </div>
+        <div class="col-md-3">
+            <input class="form-control form-control-dark form-control-sm" id="search-type"
+                   placeholder="{{ _('Type (optional)', locale) }}">
+        </div>
+        <div class="col-md-2">
+            <input class="form-control form-control-dark form-control-sm" id="search-price"
+                   type="number" placeholder="{{ _('Max price', locale) }}">
+        </div>
+        <div class="col-md-2">
+            <button class="btn btn-sm btn-outline-info w-100"
+                    hx-get="/api/v1/trade/search"
+                    hx-include="#search-name,#search-type,#search-price"
+                    hx-target="#search-results"
+                    hx-indicator="#search-spinner">
+                {{ _("Search", locale) }}
+            </button>
+        </div>
+    </div>
+</div>
+
+<div id="search-spinner" class="htmx-indicator text-center py-3">
+    <div class="spinner-border spinner-border-sm text-muted" role="status"></div>
+</div>
+
+<div id="search-results" class="table-responsive">
+    <div class="text-center text-muted py-5">
+        {{ _("Search for items to find deals", locale) }}
+    </div>
+</div>
+
+<script>
+function trackItem(name, type, price) {
+    const data = {
+        name: 'Track ' + name,
+        item_name: name,
+        item_type: type || '',
+        max_price: price || 0,
+        min_discount: 0.1,
+        is_active: true,
+        notify_sound: true,
+        notify_browser: true,
+        auto_copy_whisper: false,
+        league_id: 1,
+    };
+    fetch('/api/v1/watchlist', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)})
+        .then(r => r.json()).then(d => {
+            var msg = 'Rule created: ' + d.name + ' (id=' + d.id + ')';
+            var toast = document.createElement('div');
+            toast.className = 'position-fixed bottom-0 end-0 m-3 p-3 bg-dark text-light border border-info rounded';
+            toast.style.zIndex = '9999';
+            toast.textContent = msg;
+            document.body.appendChild(toast);
+            setTimeout(function(){ toast.remove(); }, 3000);
+        });
+}
+</script>
+{% endblock %}
