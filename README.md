@@ -1,5 +1,7 @@
 # POE2 Analytics
 
+> **仅支持国际服（pathofexile.com）**，不支持国服（poe2.qq.com）。国服由腾讯运营，没有公开 Trade API、Stash API 和 WebSocket 接口，所有依赖这些 API 的功能均无法在国服使用。
+
 一个 Python FastAPI 应用，用来爬 POE2 的市场数据，发现低价物品，实时通知你去买。
 
 ## 5 分钟跑起来
@@ -21,14 +23,14 @@ python -m uvicorn app.main:app --host 127.0.0.1 --port 8006 --reload
 
 | 配置 | 默认值 | 说明 | 必须？ |
 |------|--------|------|--------|
-| `GGG_POESESSID` | 空 | POE 账号登录 Cookie | 要用监控和交易搜索的话必须填 |
+| `GGG_POESESSID` | 空 | 国际服账号 Cookie（仅 pathofexile.com，国服不可用） | 要用监控和交易搜索的话必须填 |
 | `LEAGUES` | `Fate of the Vaal,Standard,...` | 刷数据的联赛，逗号分隔 | 否 |
 | `CRAWL_INTERVAL_MINUTES` | `30` | 价格数据多久刷新一次 | 否 |
 | `STASH_INTERVAL_MINUTES` | `5` | 公共仓库拉取间隔 | 否 |
 
 ### 怎么拿 POESESSID
 
-浏览器登录 [pathofexile.com](https://www.pathofexile.com)，F12 → Application → Cookies，找 `POESESSID`，复制值贴到 `.env`。
+在浏览器中登录 [pathofexile.com](https://www.pathofexile.com)（国际服，不是 poe2.qq.com 国服），F12 → Application → Cookies，找 `POESESSID`，复制值贴到 `.env`。
 
 这串字符等于你的账号密码，别发给任何人。`.env` 已经加在 `.gitignore` 里了，不会被提交。
 
@@ -54,7 +56,7 @@ python -m uvicorn app.main:app --host 127.0.0.1 --port 8006 --reload
 
 URL 加 `?lang=en` 切英文，`?lang=zh` 切回中文。
 
-### Monitor（监控页）
+### Monitor（监控页） — 国际服专属
 
 核心功能。设置规则："如果 Headhunter 低于 50 divine，通知我"。系统通过 WebSocket 连着 GGG 的 Trade2 实时搜索，有符合条件的物品上架，立刻弹到页面上。
 
@@ -72,7 +74,7 @@ URL 加 `?lang=en` 切英文，`?lang=zh` 切回中文。
 
 按技能/辅助分类，显示每一级、每一品质的价格。
 
-### Trades（交易搜索页）
+### Trades（交易搜索页） — 国际服专属
 
 输入物品名、类型、最高价格，调 GGG Trade2 API 搜在线物品。结果有图标、名字、价格、卖家。点 `Track` 一键创建监控规则——物品名和价格自动填好。
 
