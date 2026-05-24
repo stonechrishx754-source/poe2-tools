@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+{% block title %}{{ _("Purchases", locale) }} — POE2 Analytics{% endblock %}
+
+{% block content %}
+<h1 class="page-title mb-4">{{ _("Purchases", locale) }}</h1>
+
+<div class="row g-3 mb-4">
+    <div class="col-6 col-md-3">
+        <div class="card-stat">
+            <div class="value">{{ count }}</div>
+            <div class="label">{{ _("Total Purchases", locale) }}</div>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="card-stat">
+            <div class="value text-chaos">{{ total_spent }}</div>
+            <div class="label">{{ _("Total Spent", locale) }} (chaos)</div>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="card-stat">
+            <div class="value" style="color:#3fb950;">{{ total_saved }}</div>
+            <div class="label">{{ _("Total Saved", locale) }} (chaos)</div>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="card-stat">
+            <div class="value" style="color:{{ '#3fb950' if roi > 0 else '#f85149' }};">{{ roi }}%</div>
+            <div class="label">{{ _("ROI", locale) }}</div>
+        </div>
+    </div>
+</div>
+
+<div class="table-responsive">
+    <table class="table table-dark">
+        <thead><tr>
+            <th>{{ _("Date", locale) }}</th>
+            <th>{{ _("Item", locale) }}</th>
+            <th class="text-end">{{ _("Price", locale) }}</th>
+            <th class="text-end">{{ _("Market", locale) }}</th>
+            <th class="text-end">{{ _("Saved", locale) }}</th>
+            <th>{{ _("Seller", locale) }}</th>
+        </tr></thead>
+        <tbody>
+        {% for p in purchases %}
+        <tr>
+            <td style="font-size:.8rem;">{{ p.purchased_at.strftime('%m-%d %H:%M') }}</td>
+            <td>{{ p.item_name }}</td>
+            <td class="text-end">{{ p.price_amount }} {{ p.price_currency }}</td>
+            <td class="text-end">{{ "%.0f"|format(p.market_avg) if p.market_avg else '—' }}</td>
+            <td class="text-end" style="color:{{ '#3fb950' if (p.market_avg or 0) - p.price_amount > 0 else '#f85149' }};">
+                {{ "%.0f"|format((p.market_avg or 0) - p.price_amount) if p.market_avg else '—' }}
+            </td>
+            <td>{{ p.seller_account or '—' }}</td>
+        </tr>
+        {% else %}
+        <tr><td colspan="6" class="text-center text-muted py-4">{{ _("No purchases yet", locale) }}</td></tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

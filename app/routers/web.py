@@ -208,6 +208,27 @@ async def trades_page(request: Request):
     return templates.TemplateResponse(request, "trades.html", _ctx(request))
 
 
+@router.get("/purchases", response_class=HTMLResponse)
+async def purchases_page(request: Request, db: AsyncSession = Depends(get_db)):
+    from app.models.purchase_log import PurchaseLog
+
+    result = await db.execute(
+        select(PurchaseLog).order_by(desc(PurchaseLog.purchased_at))
+    )
+    purchases = result.scalars().all()
+
+    total_spent = sum(p.price_amount for p in purchases)
+    total_saved = sum((p.market_avg or p.price_amount) - p.price_amount for p in purchases)
+    roi = (total_saved / total_spent * 100) if total_spent > 0 else 0
+
+    return templates.TemplateResponse(
+        request, "purchases.html",
+        _ctx(request, purchases=purchases, total_spent=round(total_spent, 0),
+             total_saved=round(total_saved, 0), roi=round(roi, 1),
+             count=len(purchases)),
+    )
+
+
 # ── HTMX Fragments ──
 
 @router.get("/fragments/price-table", response_class=HTMLResponse)

@@ -146,6 +146,19 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
     "market": {"zh": "市价", "en": "market"},
     "OFF %": {"zh": "OFF", "en": "OFF"},
 
+    # Purchases
+    "Purchases": {"zh": "购买记录", "en": "Purchases"},
+    "Total Purchases": {"zh": "总购买次数", "en": "Total Purchases"},
+    "Total Spent": {"zh": "总花费", "en": "Total Spent"},
+    "Total Saved": {"zh": "总节省", "en": "Total Saved"},
+    "ROI": {"zh": "回报率", "en": "ROI"},
+    "Date": {"zh": "日期", "en": "Date"},
+    "Item": {"zh": "物品", "en": "Item"},
+    "Market": {"zh": "市价", "en": "Market"},
+    "Saved": {"zh": "节省", "en": "Saved"},
+    "Seller": {"zh": "卖家", "en": "Seller"},
+    "No purchases yet": {"zh": "暂无购买记录", "en": "No purchases yet"},
+
     # Trades
     "Trades": {"zh": "交易", "en": "Trades"},
     "Search for items to find deals": {"zh": "搜索物品以发现交易机会", "en": "Search for items to find deals"},
