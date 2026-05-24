@@ -27,9 +27,9 @@
         <div class="col-md-2">
             <select class="form-control form-control-dark form-control-sm" id="search-currency"
                     style="background:var(--surface);color:var(--text);border-color:var(--border);">
-                <option value="chaos">Chaos Orb</option>
-                <option value="divine">Divine Orb</option>
-                <option value="exalted">Exalted Orb</option>
+                <option value="chaos">{% if locale == "zh" %}混沌石{% else %}Chaos Orb{% endif %}</option>
+                <option value="divine">{% if locale == "zh" %}神圣石{% else %}Divine Orb{% endif %}</option>
+                <option value="exalted">{% if locale == "zh" %}崇高石{% else %}Exalted Orb{% endif %}</option>
             </select>
         </div>
         <div class="col-md-1">
@@ -85,7 +85,8 @@ function trackItem(name, type, price) {
             var toast = document.createElement('div');
             toast.className = 'position-fixed bottom-0 end-0 m-3 p-3 bg-dark text-light border border-info rounded';
             toast.style.zIndex = '9999';
-            toast.textContent = 'Rule: ' + d.name + ' (' + d.id + ')';
+            var lbl = "{{ _("Rule", locale) if locale else "Rule" }}";
+            toast.textContent = lbl + ': ' + d.name + ' (' + d.id + ')';
             document.body.appendChild(toast);
             setTimeout(function(){ toast.remove(); }, 3000);
         });

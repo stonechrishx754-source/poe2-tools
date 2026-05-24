@@ -36,6 +36,9 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
     "Gem Prices": {"zh": "宝石价格", "en": "Gem Prices"},
     "Live Market Data": {"zh": "实时市场数据", "en": "Live Market Data"},
     "Waiting for first crawl": {"zh": "等待首次采集", "en": "Waiting for first crawl"},
+    "Refresh": {"zh": "刷新", "en": "Refresh"},
+    "Refresh data": {"zh": "刷新数据", "en": "Refresh data"},
+    "Rule": {"zh": "规则", "en": "Rule"},
 
     # Table headers
     "Name": {"zh": "名称", "en": "Name"},
