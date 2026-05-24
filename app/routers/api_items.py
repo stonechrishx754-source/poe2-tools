@@ -1,14 +1,37 @@
 """REST API endpoints for item and gem data."""
 
 from fastapi import APIRouter, Depends, Query
+from sqlalchemy import select, func, distinct
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
+from app.models.item import ItemSnapshot
 from app.schemas.item import ItemResponse, GemResponse
 from app.services.currency_service import get_or_create_league
 from app.services.item_service import get_latest_items, get_latest_gems
 
 router = APIRouter()
+
+
+@router.get("/items/autocomplete")
+async def autocomplete(db: AsyncSession = Depends(get_db)):
+    """Get distinct item names and types for search autocomplete."""
+    names_result = await db.execute(
+        select(distinct(ItemSnapshot.item_name))
+        .where(ItemSnapshot.item_name != "")
+        .order_by(ItemSnapshot.item_name)
+        .limit(500)
+    )
+    types_result = await db.execute(
+        select(distinct(ItemSnapshot.item_type))
+        .where(ItemSnapshot.item_type.isnot(None), ItemSnapshot.item_type != "")
+        .order_by(ItemSnapshot.item_type)
+        .limit(100)
+    )
+    return {
+        "names": [r for (r,) in names_result.all()],
+        "types": [r for (r,) in types_result.all()],
+    }
 
 
 @router.get("/items", response_model=list[ItemResponse])

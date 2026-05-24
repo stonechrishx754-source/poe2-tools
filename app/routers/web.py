@@ -297,6 +297,7 @@ async def trade_search_fragment(
     name: str = Query(""),
     item_type: str = Query(""),
     max_price: float | None = Query(None),
+    currency: str = Query("chaos"),
 ):
     from app.crawlers.ggg_trade2 import GggTrade2Crawler
 

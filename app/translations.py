@@ -168,6 +168,7 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
     "Track": {"zh": "监控", "en": "Track"},
     "Item name": {"zh": "物品名称", "en": "Item name"},
     "Type (optional)": {"zh": "类型（可选）", "en": "Type (optional)"},
+    "All types": {"zh": "全部类型", "en": "All types"},
     "Max price": {"zh": "最高价格", "en": "Max price"},
 
     # Top Movers

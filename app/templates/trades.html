@@ -10,20 +10,32 @@
     <div class="row g-2">
         <div class="col-md-4">
             <input class="form-control form-control-dark form-control-sm" id="search-name"
-                   placeholder="{{ _('Item name', locale) }}" value="">
+                   list="item-names" autocomplete="off"
+                   placeholder="{{ _('Item name', locale) }}">
+            <datalist id="item-names"></datalist>
         </div>
         <div class="col-md-3">
-            <input class="form-control form-control-dark form-control-sm" id="search-type"
-                   placeholder="{{ _('Type (optional)', locale) }}">
+            <select class="form-control form-control-dark form-control-sm" id="search-type"
+                    style="background:var(--surface);color:var(--text);border-color:var(--border);">
+                <option value="">{{ _('All types', locale) }}</option>
+            </select>
         </div>
         <div class="col-md-2">
             <input class="form-control form-control-dark form-control-sm" id="search-price"
-                   type="number" placeholder="{{ _('Max price', locale) }}">
+                   type="number" placeholder="{{ _('Max price', locale) }}" min="0">
         </div>
         <div class="col-md-2">
+            <select class="form-control form-control-dark form-control-sm" id="search-currency"
+                    style="background:var(--surface);color:var(--text);border-color:var(--border);">
+                <option value="chaos">Chaos Orb</option>
+                <option value="divine">Divine Orb</option>
+                <option value="exalted">Exalted Orb</option>
+            </select>
+        </div>
+        <div class="col-md-1">
             <button class="btn btn-sm btn-outline-info w-100"
                     hx-get="/api/v1/trade/search"
-                    hx-include="#search-name,#search-type,#search-price"
+                    hx-include="#search-name,#search-type,#search-price,#search-currency"
                     hx-target="#search-results"
                     hx-indicator="#search-spinner">
                 {{ _("Search", locale) }}
@@ -43,6 +55,21 @@
 </div>
 
 <script>
+// Load item names and types for autocomplete
+fetch('/api/v1/items/autocomplete')
+    .then(r => r.json())
+    .then(data => {
+        let dl = document.getElementById('item-names');
+        (data.names || []).forEach(n => {
+            let o = document.createElement('option'); o.value = n; dl.appendChild(o);
+        });
+        let sel = document.getElementById('search-type');
+        (data.types || []).forEach(t => {
+            let o = document.createElement('option'); o.value = t; o.textContent = t;
+            sel.appendChild(o);
+        });
+    });
+
 function trackItem(name, type, price) {
     const data = {
         name: 'Track ' + name,
@@ -50,19 +77,15 @@ function trackItem(name, type, price) {
         item_type: type || '',
         max_price: price || 0,
         min_discount: 0.1,
-        is_active: true,
-        notify_sound: true,
-        notify_browser: true,
-        auto_copy_whisper: false,
-        league_id: 1,
+        is_active: true, notify_sound: true, notify_browser: true,
+        auto_copy_whisper: false, league_id: 1,
     };
     fetch('/api/v1/watchlist', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)})
         .then(r => r.json()).then(d => {
-            var msg = 'Rule created: ' + d.name + ' (id=' + d.id + ')';
             var toast = document.createElement('div');
             toast.className = 'position-fixed bottom-0 end-0 m-3 p-3 bg-dark text-light border border-info rounded';
             toast.style.zIndex = '9999';
-            toast.textContent = msg;
+            toast.textContent = 'Rule: ' + d.name + ' (' + d.id + ')';
             document.body.appendChild(toast);
             setTimeout(function(){ toast.remove(); }, 3000);
         });
