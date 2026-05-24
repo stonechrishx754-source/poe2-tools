@@ -24,7 +24,9 @@ templates = create_templates()
 
 
 def _active_league(request: Request) -> str:
-    return request.query_params.get("league", "Fate of the Vaal")
+    from app.config import settings
+    default = settings.league_list[0] if settings.league_list else "Standard"
+    return request.query_params.get("league", default)
 
 
 def _locale(request: Request) -> str:
@@ -35,10 +37,12 @@ def _locale(request: Request) -> str:
 
 def _ctx(request: Request, **extra) -> dict:
     """Build template context with common variables."""
+    from app.config import settings
     ctx = {
         "request": request,
         "league": _active_league(request),
         "locale": _locale(request),
+        "leagues": settings.league_list,
     }
     ctx.update(extra)
     return ctx

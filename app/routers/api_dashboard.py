@@ -15,6 +15,34 @@ from app.services.currency_service import get_or_create_league
 
 router = APIRouter()
 
+# Cached league list — refreshed on startup and periodically
+_cached_leagues: list[dict] = []
+_last_league_refresh = 0.0
+
+
+@router.get("/leagues")
+async def list_leagues():
+    """Get available POE2 leagues from poe2scout."""
+    import time
+    from app.crawlers.poe2scout import Poe2ScoutCrawler
+    global _cached_leagues, _last_league_refresh
+
+    if not _cached_leagues or time.time() - _last_league_refresh > 3600:
+        crawler = Poe2ScoutCrawler()
+        try:
+            raw = await crawler.fetch_leagues()
+            _cached_leagues = [
+                {"name": r["Value"], "short": r["ShortName"], "current": r["IsCurrent"]}
+                for r in raw if isinstance(r, dict)
+            ]
+            _last_league_refresh = time.time()
+        except Exception:
+            pass
+        finally:
+            await crawler.close()
+
+    return _cached_leagues
+
 
 @router.get("/dashboard/crawl-status", response_model=list[CrawlStatusResponse])
 async def crawl_status(

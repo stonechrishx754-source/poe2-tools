@@ -36,7 +36,12 @@
             <a href="?lang={% if locale == 'zh' %}en{% else %}zh{% endif %}" class="text-decoration-none" aria-label="{{ 'Switch to English' if locale == 'zh' else 'Switch to Chinese' }}" style="font-size: .8rem; color: var(--muted);">
                 {{ "En" if locale == "zh" else "中文" }}
             </a>
-            <span style="font-size: .75rem; color: var(--muted);">{{ league }}</span>
+            <select onchange="var p=new URLSearchParams(location.search);p.set('league',this.value);location.search=p.toString()"
+                    style="font-size:.75rem;background:var(--surface);color:var(--text);border:1px solid var(--border);border-radius:4px;padding:.2rem .5rem;">
+                {% for l in leagues %}
+                <option value="{{ l }}" {% if l == league %}selected{% endif %}>{{ l }}</option>
+                {% endfor %}
+            </select>
         </div>
     </div>
 </nav>
