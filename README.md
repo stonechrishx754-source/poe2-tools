@@ -21,135 +21,130 @@ python -m uvicorn app.main:app --host 127.0.0.1 --port 8006 --reload
 
 | 配置 | 默认值 | 说明 | 必须？ |
 |------|--------|------|--------|
-| `GGG_POESESSID` | 空 | POE 账号登录 Cookie | 要用监控功能的话必须填 |
+| `GGG_POESESSID` | 空 | POE 账号登录 Cookie | 要用监控和交易搜索的话必须填 |
 | `LEAGUES` | `Fate of the Vaal,Standard,...` | 刷数据的联赛，逗号分隔 | 否 |
 | `CRAWL_INTERVAL_MINUTES` | `30` | 价格数据多久刷新一次 | 否 |
 | `STASH_INTERVAL_MINUTES` | `5` | 公共仓库拉取间隔 | 否 |
 
 ### 怎么拿 POESESSID
 
-1. 浏览器登录 [pathofexile.com](https://www.pathofexile.com)
-2. 按 F12 → Application → Cookies
-3. 找 `POESESSID`，把它的值复制出来
-4. 贴到 `.env` 的 `GGG_POESESSID=` 后面
+浏览器登录 [pathofexile.com](https://www.pathofexile.com)，F12 → Application → Cookies，找 `POESESSID`，复制值贴到 `.env`。
 
 这串字符等于你的账号密码，别发给任何人。`.env` 已经加在 `.gitignore` 里了，不会被提交。
 
 ## 每个页面干什么
 
-导航栏有 5 个入口：
+导航栏有 7 个入口。
 
-### Dashboard
+### Dashboard（首页）
 
-打开就是。四个数字卡片显示库里有多少货币、装备、宝石，以及最近一次数据更新时间。下面是三个快捷入口。
+四个数字卡片：货币、装备、宝石数量、最后更新时间。下面两张涨跌榜——24 小时涨幅 Top 5 和跌幅 Top 5。涨跌榜需要积累几次历史快照才有数据，刚部署时可能是空的。
 
-数据是空的？别急，启动后后台会自动去 poe2scout 拉数据，等几分钟刷新就好。
+最底部是三个快捷入口卡片。
 
 ### Currency（货币页）
 
-顶部三个数字：Chaos 是基准（1），Divine 显示当前混沌石兑换率，Exalted 暂无数据。
+顶部分三列：Chaos（基准 1）、Exalted、Divine 兑换率。下面通货列表有图标、名称、混沌石价格、神圣石换算。Mirror of Kalandra 这种高价的会用黄色标出来。
 
-下面是通货列表。每行有物品图标、名称、混沌石价格、神圣石换算。像 Mirror of Kalandra 这种高价值物品会用黄色标出来。
-
-碎片和 Greater/Perfect 变体会自动过滤掉，不会在列表里出现。页面每 5 分钟自动刷新。
+碎片和 Greater/Perfect 变体会自动过滤掉。页面每 5 分钟自动刷新。
 
 ### Items（装备页）
 
-按分类浏览：防具、武器、饰品、珠宝、药剂、地图、通货、碎片。点顶部分类标签切换。
+按分类浏览：防具、武器、饰品、珠宝、药剂、地图、通货、碎片。顶部分类标签切换。每件有图标、名称、价格。搜索框输入即过滤。
 
-每件物品显示小图标、名称、价格。顶部有搜索框，输入即过滤。点物品名进详情页。
+URL 加 `?lang=en` 切英文，`?lang=zh` 切回中文。
 
-URL 加 `?lang=en` 切英文，`?lang=zh` 切回中文。导航栏右边也有快捷切换按钮。
+### Monitor（监控页）
 
-### Monitor（监控页 — 重点功能）
+核心功能。设置规则："如果 Headhunter 低于 50 divine，通知我"。系统通过 WebSocket 连着 GGG 的 Trade2 实时搜索，有符合条件的物品上架，立刻弹到页面上。
 
-这里才是最有用的部分。你可以设置规则："如果 Headhunter 低于 50 divine，通知我"。系统通过 WebSocket 连着 GGG 的 Trade2 实时搜索，有符合条件的物品上架，立刻弹到页面上。
+没填 POESESSID 的话，规则能创建但不能实际监控。页面顶部会有红色提示条。
 
-没填 POESESSID 的话，规则能创建但不能实际监控（Trade2 需要登录态）。
+**左边** 是规则列表，名称、物品、价格上限、开关。**右边** 是实时交易流，新发现从顶部插入，带折扣百分比、价格对比、卖家名。
 
-#### 界面说明
-- **左边：** 你的规则列表。每条规则显示名称、监控的物品、价格上限、开关
-- **右边：** 实时交易流。新发现的物品会从顶部插入，带折扣百分比、价格对比、卖家名
+点 `+ 新建` 创建规则。规则创建后立刻生效。
 
-#### 怎么创建规则
-1. 点左边 `+ 新建`
-2. 填表单：
-   - **规则名称：** 自己看的标签，比如"便宜 Headhunter"
-   - **物品名称：** 要蹲的物品，比如 `Headhunter`
-   - **最高价格（混沌石）：** 比这个贵的直接跳过
-   - **最低折扣 %：** 填 15 表示"低于市价 15% 才提醒"
-3. 点创建
+收到提醒时点 **复制密语**，切到游戏粘贴发给卖家。点 **打开页面** 可以看 Trade 网站详情。买完后点 **已购买** 记录到数据库。
 
-规则创建后立刻生效。
-
-#### 收到提醒后怎么办
-每条提醒卡片有三个操作：
-- **复制密语：** 密语进剪贴板，切到游戏里粘贴发给卖家
-- **打开页面：** 新标签页打开 Trade 网站，可以看物品详情
-- **已购买：** 标记交易完成，记录到数据库里
-
-本系统只负责"发现 + 通知"。密语得你自己发，交易得你自己做。自动交易违反 GGG 用户协议，有封号风险。
+本系统只做"发现 + 通知"，密语自己发，交易自己做。自动交易违反 GGG 协议。
 
 ### Gems（宝石页）
 
-按技能宝石 / 辅助宝石分类。显示每一级、每一品质的价格。数据和其他页面一样，后台自动刷新。
+按技能/辅助分类，显示每一级、每一品质的价格。
 
 ### Trades（交易搜索页）
 
-输入物品名、类型、最高价格，直接查 GGG Trade2 在线物品列表。
-
-搜索结果是实时从 Trade API 获取的（需要 POESESSID）。每条结果有图标、名字、类型、价格、卖家。点 `Track` 按钮一键创建监控规则——物品名和价格自动填入。
-
-### 仪表盘涨跌榜
-
-首页统计卡片下面有两列：24 小时涨幅 Top 5 和跌幅 Top 5。数据从 item_snapshots 表的最近两次快照对比算出。
-
-涨跌榜需要积累足够的历史快照才有数据，刚部署时可能为空。
+输入物品名、类型、最高价格，调 GGG Trade2 API 搜在线物品。结果有图标、名字、价格、卖家。点 `Track` 一键创建监控规则——物品名和价格自动填好。
 
 ### Purchases（购买记录页）
 
-在 Monitor 页面标记"已购买"后，记录会出现在这里。顶部汇总：总购买次数、总花费、总节省金额、ROI 百分比。下面是每笔购买明细表。
+在 Monitor 标记"已购买"的记录会出现在这里。四个卡片：总购买次数、总花费、总节省、ROI。下面每笔明细表。
+
+## 项目健康
+
+```bash
+# 跑测试
+python -m pytest tests/ -v
+# 12 passed ✅
+```
+
+**后台任务（3 个）：**
+
+| 任务 | 频率 | 做什么 |
+|------|------|--------|
+| data_sync | 每 30 分钟 | 从 poe2scout 拉取货币、装备价格 |
+| stash_poll | 每 5 分钟 | 轮询 GGG 公共仓库新上架物品 |
+| price_compaction | 每天凌晨 3 点 | 聚合昨日快照到 price_history，清理 30 天前数据 |
+
+**数据库**：SQLite，7 个性能索引，Alembic 迁移管理。
 
 ## API 文档
 
-`http://127.0.0.1:8006/docs` 有完整的 Swagger 文档，可以直接在网页上测试。
+`http://127.0.0.1:8006/docs` 有 Swagger，可以直接在网页上测试。
 
-几个常用接口：
+常用接口：
 
 | 方法 | 路径 | 做什么 |
 |------|------|--------|
+| GET | `/api/v1/dashboard/summary` | 仪表盘摘要（含涨跌榜） |
+| GET | `/api/v1/currency` | 货币价格列表 |
+| GET | `/api/v1/items` | 装备价格列表（支持分类过滤） |
 | GET | `/api/v1/watchlist` | 列出所有监控规则 |
 | POST | `/api/v1/watchlist` | 新建规则 |
 | PUT | `/api/v1/watchlist/{id}` | 修改规则 |
 | DELETE | `/api/v1/watchlist/{id}` | 删除规则 |
 | GET | `/api/v1/deals` | 最近发现的交易机会 |
+| GET | `/api/v1/deals/{id}/detail` | 单笔交易详情 + 价格曲线 |
+| PUT | `/api/v1/deals/{id}/mark-purchased` | 标记已购买 |
 | GET | `/api/v1/monitor/stream` | SSE 实时推送流 |
 
-## 用了什么
+## 技术栈
 
-Python 3.12 + FastAPI + SQLAlchemy 2.0 (async) + aiosqlite 做后端，Jinja2 + HTMX + Alpine.js + Chart.js + Bootstrap 5 做前端，APScheduler 跑定时任务，SSE 做实时推送。
+Python 3.12 + FastAPI + SQLAlchemy 2.0 (async) + aiosqlite · Jinja2 + HTMX + Chart.js + Bootstrap 5 · APScheduler · SSE + Trade2 WebSocket · Alembic
 
-数据从 poe2scout.com API、GGG Public Stash API、GGG Trade2 API 三个地方来。
+数据来源：poe2scout.com API、GGG Public Stash API、GGG Trade2 API
 
 ## 目录结构
 
 ```
 E:/project-poe2/
 ├── app/
-│   ├── main.py              # 入口 & 生命周期管理
+│   ├── main.py              # 入口 & 生命周期
 │   ├── config.py             # 从 .env 读配置
 │   ├── database.py           # 异步 SQLAlchemy 引擎
-│   ├── scheduler.py          # 两个定时任务
-│   ├── translations.py       # 中英文字典
-│   ├── models/               # 10 张 ORM 表
-│   ├── crawlers/             # 3 个数据采集器
-│   ├── services/             # 6 个业务模块
+│   ├── scheduler.py          # 3 个定时任务
+│   ├── translations.py       # 中英文词典
+│   ├── models/               # 9 张 ORM 表
+│   ├── crawlers/             # 4 个数据采集器
+│   ├── services/             # 7 个业务模块
 │   ├── routers/              # 5 个路由模块
-│   ├── templates/            # 页面模板
+│   ├── templates/            # 页面模板 + 碎片
 │   └── static/               # CSS + JS
+├── alembic/                  # 数据库迁移
+├── tests/                    # pytest (12 tests)
 ├── data/                     # SQLite 数据库
 ├── .env                      # 你的配置
 ├── requirements.txt
-├── start.bat
-└── start.sh
+├── start.bat                 # Windows 一键启动
+└── start.sh                  # Linux/macOS 一键启动
 ```
