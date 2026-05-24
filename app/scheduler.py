@@ -13,6 +13,7 @@ from app.services.currency_service import (
     save_poe2scout_currencies,
 )
 from app.services.item_service import save_poe2scout_items, save_poe2scout_uniques
+from app.crawlers.ggg_stash import GggStashCrawler
 
 logger = logging.getLogger(__name__)
 
@@ -78,6 +79,30 @@ async def crawl_data():
     await crawler.close()
 
 
+async def crawl_stash():
+    """Scheduled: poll GGG Public Stash API."""
+    crawler = GggStashCrawler()
+    await crawler.load_cursor()
+    start = datetime.now(timezone.utc)
+    error_msg = None
+    try:
+        items, new_cursor = await crawler.poll()
+        if new_cursor:
+            crawler.next_change_id = new_cursor
+            crawler.save_cursor()
+        logger.info("ggg_stash: polled %d priced items", len(items))
+        async with AsyncSessionLocal() as db:
+            log = CrawlLog(source="ggg_stash", status="success",
+                           items_count=len(items), duration_s=(datetime.now(timezone.utc) - start).total_seconds(), started_at=start)
+            db.add(log)
+            await db.commit()
+    except Exception as e:
+        error_msg = str(e)
+        logger.error("ggg_stash poll failed: %s", e)
+    finally:
+        await crawler.close()
+
+
 def start_scheduler() -> AsyncIOScheduler:
     """Create, configure, and start the APScheduler instance."""
     scheduler = AsyncIOScheduler(timezone="Asia/Shanghai")
@@ -87,6 +112,15 @@ def start_scheduler() -> AsyncIOScheduler:
         "interval",
         minutes=settings.CRAWL_INTERVAL_MINUTES,
         id="data_sync",
+        max_instances=1,
+        replace_existing=True,
+    )
+
+    scheduler.add_job(
+        crawl_stash,
+        "interval",
+        minutes=settings.STASH_INTERVAL_MINUTES,
+        id="stash_poll",
         max_instances=1,
         replace_existing=True,
     )
