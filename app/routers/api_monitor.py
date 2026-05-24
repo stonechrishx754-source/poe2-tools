@@ -2,6 +2,7 @@
 
 from fastapi import APIRouter, Depends, Query
 from fastapi.responses import JSONResponse
+from pydantic import BaseModel
 from sse_starlette import EventSourceResponse
 from sqlalchemy import desc, select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -11,11 +12,41 @@ from app.models.deal_alert import DealAlert
 from app.models.purchase_log import PurchaseLog
 from app.models.watchlist import WatchlistRule
 
+
+class WatchlistCreate(BaseModel):
+    name: str
+    item_name: str = ""
+    item_type: str | None = None
+    max_price: float | None = None
+    min_discount: float = 0.15
+    is_active: bool = True
+    notify_sound: bool = True
+    notify_browser: bool = True
+    auto_copy_whisper: bool = False
+    league_id: int = 1
+
+
+class WatchlistUpdate(BaseModel):
+    name: str | None = None
+    item_name: str | None = None
+    item_type: str | None = None
+    max_price: float | None = None
+    min_discount: float | None = None
+    is_active: bool | None = None
+    notify_sound: bool | None = None
+    notify_browser: bool | None = None
+    auto_copy_whisper: bool | None = None
+
+
 router = APIRouter()
 
 # Set by main.py during startup
 alert_service = None
 monitor_service = None
+
+
+def _get_svc(request):
+    return request.app.state
 
 
 @router.get("/monitor/stream")
@@ -51,19 +82,25 @@ async def list_rules(db: AsyncSession = Depends(get_db)):
 
 
 @router.post("/watchlist")
-async def create_rule(rule: dict, db: AsyncSession = Depends(get_db)):
+async def create_rule(rule: WatchlistCreate, db: AsyncSession = Depends(get_db)):
     """Create a new watchlist rule."""
-    r = WatchlistRule(**rule)
+    r = WatchlistRule(**rule.model_dump())
     db.add(r)
     await db.commit()
     await db.refresh(r)
     if r.is_active and monitor_service:
-        await monitor_service.start_rule(r)
-    return {"id": r.id, "name": r.name}
+        try:
+            await monitor_service.start_rule(r)
+        except Exception as e:
+            import logging
+            logging.getLogger(__name__).warning(
+                "Failed to start monitoring for rule %d: %s", r.id, e
+            )
+    return {"id": r.id, "name": r.name, "is_active": r.is_active}
 
 
 @router.put("/watchlist/{rule_id}")
-async def update_rule(rule_id: int, data: dict, db: AsyncSession = Depends(get_db)):
+async def update_rule(rule_id: int, data: WatchlistUpdate, db: AsyncSession = Depends(get_db)):
     """Update a rule and sync monitoring state."""
     result = await db.execute(
         select(WatchlistRule).where(WatchlistRule.id == rule_id)
@@ -72,18 +109,23 @@ async def update_rule(rule_id: int, data: dict, db: AsyncSession = Depends(get_d
     if not r:
         return JSONResponse({"error": "Not found"}, 404)
 
-    for key, val in data.items():
-        if hasattr(r, key):
-            setattr(r, key, val)
+    for key, val in data.model_dump(exclude_unset=True).items():
+        setattr(r, key, val)
     await db.commit()
     await db.refresh(r)
 
     if monitor_service:
-        was_running = monitor_service.is_running(rule_id)
-        if r.is_active and not was_running:
-            await monitor_service.start_rule(r)
-        elif not r.is_active and was_running:
-            await monitor_service.stop_rule(rule_id)
+        try:
+            was_running = monitor_service.is_running(rule_id)
+            if r.is_active and not was_running:
+                await monitor_service.start_rule(r)
+            elif not r.is_active and was_running:
+                await monitor_service.stop_rule(rule_id)
+        except Exception as e:
+            import logging
+            logging.getLogger(__name__).warning(
+                "Failed to sync monitoring for rule %d: %s", rule_id, e
+            )
 
     return {"id": r.id, "name": r.name, "is_active": r.is_active}
 
@@ -132,10 +174,14 @@ async def list_deals(
     ]
 
 
+class MarkPurchased(BaseModel):
+    notes: str = ""
+
+
 @router.put("/deals/{deal_id}/mark-purchased")
 async def mark_purchased(
     deal_id: int,
-    data: dict = None,
+    data: MarkPurchased = MarkPurchased(),
     db: AsyncSession = Depends(get_db),
 ):
     """Mark a deal as purchased and create PurchaseLog entry."""
@@ -155,7 +201,7 @@ async def mark_purchased(
         price_currency=deal.price_currency,
         market_avg=deal.market_avg,
         seller_account=deal.seller_account,
-        notes=(data or {}).get("notes", ""),
+        notes=data.notes,
     )
     db.add(log)
     await db.commit()

@@ -1,75 +1,72 @@
 {% extends "base.html" %}
-{% block title %}Monitor — POE2 Analytics{% endblock %}
+{% block title %}{{ _("Monitor", locale) }} — POE2 Analytics{% endblock %}
 
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mb-3">
     <h1 class="page-title">{{ _("Monitor", locale) }}</h1>
     <div class="d-flex gap-2 align-items-center">
-        <span id="sse-status" class="text-muted" style="font-size:.75rem;">SSE: connecting...</span>
+        <span id="sse-status" class="text-muted" style="font-size:.75rem;">{{ _("SSE: connecting...", locale) }}</span>
     </div>
 </div>
 
 <div class="row g-3">
-    <!-- Left: Rules sidebar -->
     <div class="col-md-3">
         <div class="card" style="min-height: 300px;">
             <div class="p-3 border-bottom" style="border-color: var(--border) !important;">
                 <div class="d-flex justify-content-between align-items-center">
-                    <span class="text-label" style="font-size:.75rem;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;">{{ _("Active Rules", locale) }}</span>
+                    <span class="text-label">{{ _("Active Rules", locale) }}</span>
                     <button class="btn btn-sm btn-outline-secondary"
-                            onclick="document.getElementById('rule-form-modal').hidden=!document.getElementById('rule-form-modal').hidden;">
+                            onclick="var m=document.getElementById('rule-form-modal');m.style.display=m.style.display==='none'?'flex':'none';">
                         + {{ _("New", locale) }}
                     </button>
                 </div>
             </div>
             <div class="p-2" id="rules-list" style="max-height: 60vh; overflow-y: auto;">
-                <div class="text-center text-muted py-4" style="font-size:.8rem;">Loading...</div>
+                <div class="text-center text-muted py-4" style="font-size:.8rem;">{{ _("Loading...", locale) }}</div>
             </div>
         </div>
     </div>
 
-    <!-- Right: Deal Feed -->
     <div class="col-md-9">
         <div class="card" style="min-height: 400px;">
             <div class="p-3 border-bottom" style="border-color: var(--border) !important;">
-                <span class="text-label" style="font-size:.75rem;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;">{{ _("Live Deal Feed", locale) }}</span>
+                <span class="text-label">{{ _("Live Deal Feed", locale) }}</span>
             </div>
             <div class="p-3" id="deal-feed" style="max-height: 70vh; overflow-y: auto;">
                 <div class="text-center text-muted py-5 empty-state">
                     <div style="font-size: 2rem; margin-bottom: .5rem;">&#x1F4E1;</div>
                     <div class="empty-state-title">{{ _("Waiting for deals...", locale) }}</div>
-                    <div class="empty-state-desc" style="font-size: .75rem; margin-top: .25rem;">{{ _("Create a rule to start monitoring", locale) }}</div>
+                    <div class="empty-state-desc">{{ _("Create a rule to start monitoring", locale) }}</div>
                 </div>
             </div>
         </div>
     </div>
 </div>
 
-<!-- Hidden rule creation form -->
-<div id="rule-form-modal" hidden style="position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.6);z-index:1000;display:flex;align-items:center;justify-content:center;">
+<div id="rule-form-modal" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.6);z-index:1000;align-items:center;justify-content:center;">
     <div class="card p-4" style="width: 420px; max-width: 90vw;">
         <h5 class="mb-3">{{ _("New Rule", locale) }}</h5>
         <div class="mb-3">
-            <label class="form-label small">Rule Name</label>
-            <input class="form-control form-control-dark form-control-sm" id="rule-name" placeholder="e.g. Cheap Headhunter">
+            <label class="form-label small">{{ _("Rule Name", locale) }}</label>
+            <input class="form-control form-control-dark form-control-sm" id="rule-name" placeholder="{% if locale == "en" %}e.g. Cheap Headhunter{% else %}例如: 猎首{% endif %}">
         </div>
         <div class="mb-3">
-            <label class="form-label small">Item Name</label>
-            <input class="form-control form-control-dark form-control-sm" id="rule-item" placeholder="e.g. Headhunter">
+            <label class="form-label small">{{ _("Item Name", locale) }}</label>
+            <input class="form-control form-control-dark form-control-sm" id="rule-item" placeholder="{% if locale == "en" %}e.g. Headhunter{% else %}例如: Headhunter{% endif %}">
         </div>
         <div class="row g-2 mb-3">
             <div class="col-6">
-                <label class="form-label small">Max Price (chaos)</label>
-                <input class="form-control form-control-dark form-control-sm" id="rule-max-price" type="number" placeholder="e.g. 5000">
+                <label class="form-label small">{{ _("Max Price (chaos)", locale) }}</label>
+                <input class="form-control form-control-dark form-control-sm" id="rule-max-price" type="number" placeholder="5000">
             </div>
             <div class="col-6">
-                <label class="form-label small">Min Discount %</label>
+                <label class="form-label small">{{ _("Min Discount %", locale) }}</label>
                 <input class="form-control form-control-dark form-control-sm" id="rule-min-discount" type="number" value="15" min="1" max="99">
             </div>
         </div>
         <div class="d-flex gap-2 justify-content-end">
-            <button class="btn btn-sm btn-outline-secondary" onclick="document.getElementById('rule-form-modal').hidden=true">Cancel</button>
-            <button class="btn btn-sm btn-outline-info" onclick="createRule()">Create</button>
+            <button class="btn btn-sm btn-outline-secondary" onclick="document.getElementById('rule-form-modal').style.display='none'">{{ _("Cancel", locale) }}</button>
+            <button class="btn btn-sm btn-outline-info" onclick="createRule()">{{ _("Create", locale) }}</button>
         </div>
     </div>
 </div>
@@ -77,11 +74,27 @@
 
 {% block scripts %}
 <script>
+const i18n = {{ {
+    "Loading...": _("Loading...", locale),
+    "No rules yet": _("No rules yet", locale),
+    "ON": _("ON", locale),
+    "OFF": _("OFF", locale),
+    "Copy": _("Copy", locale),
+    "Open": _("Open", locale),
+    "Bought": _("Bought", locale),
+    "Done": _("Done", locale),
+    "SSE: connected": _("SSE: connected", locale),
+    "SSE: reconnecting...": _("SSE: reconnecting...", locale),
+    "market": _("market", locale),
+    "OFF %": _("OFF", locale),
+}|tojson|safe }};
+function t(key) { return i18n[key] || key; }
+
 function loadRules() {
     fetch('/api/v1/watchlist').then(r => r.json()).then(rules => {
         const el = document.getElementById('rules-list');
         if (!rules.length) {
-            el.innerHTML = '<div class="text-center text-muted py-4 empty-state"><div class="empty-state-title">{{ _("No rules yet", locale) }}</div></div>';
+            el.innerHTML = '<div class="text-center text-muted py-4 empty-state"><div class="empty-state-title">'+t('No rules yet')+'</div></div>';
             return;
         }
         el.innerHTML = rules.map(r => `
@@ -89,9 +102,9 @@ function loadRules() {
                  style="background: var(--surface); cursor: pointer; border-left: 3px solid ${r.is_active ? '#3fb950' : '#f85149'};">
                 <div>
                     <div style="font-size:.8rem;font-weight:600;">${r.name}</div>
-                    <div style="font-size:.65rem;color:var(--muted);">${r.item_name} &le; ${r.max_price || '∞'}c</div>
+                    <div style="font-size:.65rem;color:var(--muted);">${r.item_name} &le; ${r.max_price || '&infin;'}c</div>
                 </div>
-                <span class="badge ${r.is_active ? 'bg-success' : 'bg-secondary'}" style="font-size:.6rem;cursor:pointer;" onclick="toggleRule(${r.id}, ${!r.is_active})">${r.is_active ? 'ON' : 'OFF'}</span>
+                <span class="badge ${r.is_active ? 'bg-success' : 'bg-secondary'}" style="font-size:.6rem;cursor:pointer;" onclick="toggleRule(${r.id}, ${!r.is_active})">${r.is_active ? t('ON') : t('OFF')}</span>
             </div>
         `).join('');
     });
@@ -103,15 +116,11 @@ function createRule() {
         item_name: document.getElementById('rule-item').value,
         max_price: parseFloat(document.getElementById('rule-max-price').value) || 0,
         min_discount: parseFloat(document.getElementById('rule-min-discount').value) / 100 || 0.15,
-        is_active: true,
-        notify_sound: true,
-        notify_browser: true,
-        auto_copy_whisper: false,
-        league_id: 1,
+        is_active: true, notify_sound: true, notify_browser: true, auto_copy_whisper: false, league_id: 1,
     };
     fetch('/api/v1/watchlist', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)})
         .then(r => r.json()).then(() => {
-            document.getElementById('rule-form-modal').hidden = true;
+            document.getElementById('rule-form-modal').style.display = 'none';
             ['rule-name','rule-item','rule-max-price'].forEach(id => document.getElementById(id).value = '');
             loadRules();
         });
@@ -122,7 +131,6 @@ function toggleRule(id, active) {
         .then(() => loadRules());
 }
 
-// SSE connection
 const sse = new EventSource('/api/v1/monitor/stream');
 sse.addEventListener('new-deal', (e) => {
     const deal = JSON.parse(e.data);
@@ -130,36 +138,44 @@ sse.addEventListener('new-deal', (e) => {
     const card = document.createElement('div');
     card.className = 'p-3 rounded mb-2';
     card.style.cssText = 'background:var(--surface);border:1px solid var(--purple);animation:fadeIn .3s';
+
+    const safeText = (v) => { const s=String(v||''); return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); };
+    const safeAttr = (v) => safeText(v).replace(/'/g,'&#39;').replace(/"/g,'&quot;');
+
     card.innerHTML = `
         <div class="d-flex justify-content-between align-items-start">
             <div>
-                <span class="badge" style="background:var(--purple);font-size:.65rem;">${deal.discount_pct}% OFF</span>
-                <strong style="font-size:.9rem;">${deal.item_name}</strong>
+                <span class="badge" style="background:var(--purple);font-size:.65rem;">${safeText(deal.discount_pct)}% ${t('OFF %')}</span>
+                <strong style="font-size:.9rem;">${safeText(deal.item_name)}</strong>
                 <div style="font-size:.75rem;color:var(--muted);margin-top:.25rem;">
-                    ${deal.price_amount} ${deal.price_currency} (market: ${deal.market_avg}) · ${deal.seller || '?'}
+                    ${safeText(deal.price_amount)} ${safeText(deal.price_currency)} (${t('market')}: ${safeText(deal.market_avg)}) &middot; ${safeText(deal.seller) || '?'}
                 </div>
             </div>
             <div class="d-flex gap-1">
-                <button class="btn btn-sm btn-outline-secondary" style="font-size:.65rem;" onclick="copyText('${(deal.whisper_message||'').replace(/'/g, "\\'")}')">Copy</button>
-                <button class="btn btn-sm btn-outline-secondary" style="font-size:.65rem;" onclick="window.open('${deal.trade_url}','_blank')">Open</button>
-                <button class="btn btn-sm btn-outline-success" style="font-size:.65rem;" onclick="markBought(${deal.id},this)">Bought</button>
+                <button class="btn btn-sm btn-outline-secondary deal-copy-btn" style="font-size:.65rem;">${t('Copy')}</button>
+                <button class="btn btn-sm btn-outline-secondary" style="font-size:.65rem;" onclick="window.open('${safeAttr(deal.trade_url)}','_blank')">${t('Open')}</button>
+                <button class="btn btn-sm btn-outline-success" style="font-size:.65rem;" onclick="markBought(${deal.id},this)">${t('Bought')}</button>
             </div>
         </div>`;
+    // Safely attach whisper to copy button via textContent
+    card.querySelector('.deal-copy-btn').addEventListener('click', () => copyText(deal.whisper_message || ''));
     feed.insertBefore(card, feed.firstChild);
+    // Limit DOM to 100 cards
+    while (feed.children.length > 100) { feed.removeChild(feed.lastChild); }
 });
 sse.addEventListener('heartbeat', () => {
-    document.getElementById('sse-status').textContent = 'SSE: connected';
+    document.getElementById('sse-status').textContent = t('SSE: connected');
     document.getElementById('sse-status').style.color = '#3fb950';
 });
 sse.onerror = () => {
-    document.getElementById('sse-status').textContent = 'SSE: reconnecting...';
+    document.getElementById('sse-status').textContent = t('SSE: reconnecting...');
     document.getElementById('sse-status').style.color = '#f85149';
 };
 
 function copyText(text) { navigator.clipboard.writeText(text).then(() => {}); }
 function markBought(id, btn) {
     fetch('/api/v1/deals/' + id + '/mark-purchased', {method:'PUT',headers:{'Content-Type':'application/json'},body:'{}'})
-        .then(() => { btn.textContent = 'Done'; btn.disabled = true; });
+        .then(() => { btn.textContent = t('Done'); btn.disabled = true; });
 }
 
 loadRules();

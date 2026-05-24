@@ -11,6 +11,10 @@ class AlertService:
     def __init__(self):
         self._queue: asyncio.Queue = asyncio.Queue(maxsize=1000)
 
+    @property
+    def queue(self):
+        return self._queue
+
     async def push(self, deal: dict):
         try:
             self._queue.put_nowait(deal)

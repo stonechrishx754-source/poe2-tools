@@ -43,17 +43,19 @@ async def lifespan(app: FastAPI):
     scheduler = start_scheduler()
 
     # Initialize real-time monitoring services (Phase 2)
+    active_league = settings.league_list[0] if settings.league_list else "Fate of the Vaal"
     alert_svc = AlertService()
-    deal_svc = DealService(league_id=1, alert_queue=alert_svc._queue)
+    deal_svc = DealService(league_name=active_league, alert_queue=alert_svc.queue)
     monitor_svc = MonitorService(
         poesessid=settings.GGG_POESESSID or "",
-        league="Fate of the Vaal",
+        league=active_league,
         on_item=lambda item: deal_svc.evaluate(
             rule_id=0, rule_max_price=None, rule_min_discount=0.1, item=item
         ),
     )
     api_monitor.alert_service = alert_svc
     api_monitor.monitor_service = monitor_svc
+    app.state.alert_svc = alert_svc
     app.state.monitor_svc = monitor_svc
 
     yield  # Application runs here

@@ -33,11 +33,20 @@ class Trade2LiveSearch:
         self._query_id: str | None = None
         self._running = False
         self._http: httpx.AsyncClient | None = None
+        self._listen_task: asyncio.Task | None = None
 
     async def connect(self):
+        if self._http:
+            await self._http.aclose()
+        if self._ws:
+            try:
+                await self._ws.close()
+            except Exception:
+                pass
         self._http = httpx.AsyncClient(
             cookies={"POESESSID": self._poesessid},
             timeout=30,
+            headers={"User-Agent": "POE2-Analytics/0.1"},
         )
         self._running = True
 
@@ -60,23 +69,29 @@ class Trade2LiveSearch:
         )
         logger.info("Trade2WS: connected to live search")
 
-        asyncio.create_task(self._listen_loop())
+        self._listen_task = asyncio.create_task(self._listen_loop())
 
     async def _listen_loop(self):
+        retry_delay = 5
         while self._running and self._ws:
             try:
                 raw = await asyncio.wait_for(self._ws.recv(), timeout=60)
                 msg = json.loads(raw)
-                if "new" in msg and self._query_id:
-                    item_ids = msg["new"]
-                    items = await self._fetch_items(item_ids[:10])
-                    for item in items:
-                        await self._on_item(item)
+                if "new" not in msg or not self._query_id:
+                    continue
+                item_ids = msg["new"]
+                if not item_ids:
+                    continue
+                items = await self._fetch_items(item_ids[:10])
+                for item in items:
+                    await self._on_item(item)
+                retry_delay = 5
             except asyncio.TimeoutError:
                 continue
             except websockets.ConnectionClosed:
-                logger.warning("Trade2WS: connection closed, reconnecting in 10s")
-                await asyncio.sleep(10)
+                logger.warning("Trade2WS: connection closed, reconnecting in %ds", retry_delay)
+                await asyncio.sleep(retry_delay)
+                retry_delay = min(retry_delay * 2, 60)
                 try:
                     await self.connect()
                 except Exception:
@@ -84,7 +99,8 @@ class Trade2LiveSearch:
                 break
             except Exception as e:
                 logger.error("Trade2WS: error in listen loop: %s", e)
-                await asyncio.sleep(5)
+                await asyncio.sleep(retry_delay)
+                retry_delay = min(retry_delay * 2, 60)
 
     async def _fetch_items(self, item_ids: list[str]) -> list[dict[str, Any]]:
         if not self._http or not self._query_id:
@@ -99,6 +115,13 @@ class Trade2LiveSearch:
 
     async def close(self):
         self._running = False
+        if self._listen_task:
+            self._listen_task.cancel()
+            try:
+                await self._listen_task
+            except asyncio.CancelledError:
+                pass
+            self._listen_task = None
         if self._ws:
             await self._ws.close()
             self._ws = None
