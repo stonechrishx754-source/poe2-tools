@@ -12,8 +12,12 @@ from fastapi.staticfiles import StaticFiles
 
 from app.database import engine
 from app.models.base import Base
-from app.routers import web, api_currency, api_items, api_dashboard
+from app.routers import web, api_currency, api_items, api_dashboard, api_monitor
 from app.scheduler import start_scheduler, stop_scheduler
+from app.services.alert_service import AlertService
+from app.services.monitor_service import MonitorService
+from app.services.deal_service import DealService
+from app.config import settings
 from app.template_setup import create_templates
 
 logging.basicConfig(
@@ -38,11 +42,26 @@ async def lifespan(app: FastAPI):
     # Start background scheduler
     scheduler = start_scheduler()
 
+    # Initialize real-time monitoring services (Phase 2)
+    alert_svc = AlertService()
+    deal_svc = DealService(league_id=1, alert_queue=alert_svc._queue)
+    monitor_svc = MonitorService(
+        poesessid=settings.GGG_POESESSID or "",
+        league="Fate of the Vaal",
+        on_item=lambda item: deal_svc.evaluate(
+            rule_id=0, rule_max_price=None, rule_min_discount=0.1, item=item
+        ),
+    )
+    api_monitor.alert_service = alert_svc
+    api_monitor.monitor_service = monitor_svc
+    app.state.monitor_svc = monitor_svc
+
     yield  # Application runs here
 
     # Shutdown
     logger.info("Shutting down POE2 Analytics...")
     stop_scheduler(scheduler)
+    await monitor_svc.close_all()
     await engine.dispose()
     logger.info("Shutdown complete.")
 
@@ -62,6 +81,7 @@ app.include_router(web.router)
 app.include_router(api_currency.router, prefix="/api/v1")
 app.include_router(api_items.router, prefix="/api/v1")
 app.include_router(api_dashboard.router, prefix="/api/v1")
+app.include_router(api_monitor.router, prefix="/api/v1")
 
 
 # Error handlers

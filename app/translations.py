@@ -116,6 +116,16 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
     "currency": {"zh": "通货", "en": "Currency"},
     "gem": {"zh": "宝石", "en": "Gem"},
     "gems": {"zh": "宝石", "en": "Gems"},
+
+    # Monitor
+    "Monitor": {"zh": "监控", "en": "Monitor"},
+    "Active Rules": {"zh": "活跃规则", "en": "Active Rules"},
+    "New Rule": {"zh": "新建规则", "en": "New Rule"},
+    "New": {"zh": "新建", "en": "New"},
+    "Live Deal Feed": {"zh": "实时交易流", "en": "Live Deal Feed"},
+    "Waiting for deals...": {"zh": "等待交易提醒...", "en": "Waiting for deals..."},
+    "Create a rule to start monitoring": {"zh": "创建规则开始监控", "en": "Create a rule to start monitoring"},
+    "No rules yet": {"zh": "暂无规则", "en": "No rules yet"},
 }
 
 

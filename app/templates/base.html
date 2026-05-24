@@ -28,6 +28,7 @@
             <li class="nav-item"><a class="nav-link" href="/currency?lang={{ locale }}">{{ _("Currency", locale) }}</a></li>
             <li class="nav-item"><a class="nav-link" href="/items?lang={{ locale }}">{{ _("Items", locale) }}</a></li>
             <li class="nav-item"><a class="nav-link" href="/gems?lang={{ locale }}">{{ _("Gems", locale) }}</a></li>
+            <li class="nav-item"><a class="nav-link" href="/monitor?lang={{ locale }}">{{ _("Monitor", locale) }}</a></li>
         </ul>
         <div class="d-flex align-items-center gap-2">
             <a href="?lang={% if locale == 'zh' %}en{% else %}zh{% endif %}" class="text-decoration-none" aria-label="{{ 'Switch to English' if locale == 'zh' else 'Switch to Chinese' }}" style="font-size: .8rem; color: var(--muted);">

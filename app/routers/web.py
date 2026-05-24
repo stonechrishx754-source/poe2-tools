@@ -192,6 +192,11 @@ async def gems_page(
     )
 
 
+@router.get("/monitor", response_class=HTMLResponse)
+async def monitor_page(request: Request):
+    return templates.TemplateResponse(request, "monitor.html", _ctx(request))
+
+
 # ── HTMX Fragments ──
 
 @router.get("/fragments/price-table", response_class=HTMLResponse)
