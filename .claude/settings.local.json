@@ -183,7 +183,9 @@
       "Bash(C:/Users/pc/AppData/Local/Programs/Python/Python312/python.exe -c \"from app.crawlers.ggg_trade2 import GggTrade2Crawler; print\\('GggTrade2Crawler OK'\\)\")",
       "Bash(C:/Users/pc/AppData/Local/Programs/Python/Python312/python.exe -c \"from app.main import app; print\\('OK'\\)\")",
       "Bash(C:/Users/pc/AppData/Local/Programs/Python/Python312/python.exe -c \"from app.services.analysis_service import get_top_movers; print\\('OK'\\)\")",
-      "Bash(taskkill //F //PID 6368)"
+      "Bash(taskkill //F //PID 6368)",
+      "WebFetch(domain:poe2db.tw)",
+      "Bash(grep -oP '<a[^>]*>[^<]{2,30}</a>')"
     ]
   }
 }

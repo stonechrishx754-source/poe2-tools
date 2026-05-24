@@ -7,7 +7,7 @@
         {% endif %}
     </td>
     <td>
-        <a href="/items/{{ item.name }}?lang={{ locale }}" class="text-decoration-none">{{ item.name }}</a>
+        <a href="/items/{{ item.name }}?lang={{ locale }}" class="text-decoration-none">{{ item_zh(item.name, locale) }}</a>
     </td>
     <td><span class="badge bg-secondary" style="font-size: .65rem;">{{ _(item.type, locale) if item.type else '—' }}</span></td>
     <td class="text-end">{{ "%.0f"|format(item.chaos_value) if item.chaos_value else '—' }}</td>

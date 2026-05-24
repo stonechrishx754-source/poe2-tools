@@ -4,29 +4,18 @@ import jinja2
 from fastapi.templating import Jinja2Templates
 
 from app.translations import translate
+from app.translations_item import translate_item
 
 
 def create_templates(directory: str = "app/templates") -> Jinja2Templates:
     """Create Jinja2Templates with translation function and category names built-in."""
 
-    # Category name mapping (for item types)
     CATEGORY_NAMES = {
-        "armour": "Armour",
-        "weapon": "Weapon",
-        "weapons": "Weapon",
-        "accessory": "Accessory",
-        "jewel": "Jewel",
-        "jewels": "Jewel",
-        "flask": "Flask",
-        "flasks": "Flask",
-        "map": "Map",
-        "maps": "Map",
-        "sanctum": "Sanctum",
-        "logbook": "Logbook",
-        "currency": "Currency",
-        "gem": "Gem",
-        "gems": "Gem",
-        "Unknown": "Misc",
+        "armour": "Armour", "weapon": "Weapon", "weapons": "Weapon",
+        "accessory": "Accessory", "jewel": "Jewel", "jewels": "Jewel",
+        "flask": "Flask", "flasks": "Flask", "map": "Map", "maps": "Map",
+        "sanctum": "Sanctum", "logbook": "Logbook", "currency": "Currency",
+        "gem": "Gem", "gems": "Gem", "Unknown": "Misc",
     }
 
     CATEGORY_ORDER = [
@@ -40,8 +29,8 @@ def create_templates(directory: str = "app/templates") -> Jinja2Templates:
         autoescape=jinja2.select_autoescape(),
     )
 
-    # Add translation function as a global
     env.globals["_"] = translate
+    env.globals["item_zh"] = translate_item
     env.globals["cat_name"] = CATEGORY_NAMES.get
     env.globals["cat_order"] = CATEGORY_ORDER
 

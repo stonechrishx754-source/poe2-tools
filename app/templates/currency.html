@@ -48,7 +48,7 @@
                     <img src="{{ item.icon_url }}" alt="" class="icon-sm">
                     {% endif %}
                 </td>
-                <td>{{ item.name }}</td>
+                <td>{{ item_zh(item.name, locale) }}</td>
                 <td class="text-end">
                     {% if chaos_val is not none %}
                         {% if chaos_val >= 100 %}
