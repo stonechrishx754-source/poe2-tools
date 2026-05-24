@@ -1,3 +1,4 @@
+{% if items %}
 {% for item in items %}
 <tr>
     <td class="icon-col">
@@ -12,6 +13,7 @@
     <td class="text-end">{{ "%.0f"|format(item.chaos_value) if item.chaos_value else '—' }}</td>
     <td class="text-end">{{ "%.4f"|format(item.divine_value) if item.divine_value else '—' }}</td>
 </tr>
+{% endfor %}
 {% else %}
 <tr><td colspan="5" class="text-center text-muted py-4">{{ _("No data available yet.", locale) }}</td></tr>
-{% endfor %}
+{% endif %}

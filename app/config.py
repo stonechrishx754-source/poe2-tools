@@ -16,14 +16,11 @@ class Settings(BaseSettings):
     # Crawl intervals (minutes)
     CRAWL_INTERVAL_MINUTES: int = 30
     STASH_INTERVAL_MINUTES: int = 5
-    LADDER_INTERVAL_MINUTES: int = 60
 
     # API keys / secrets
-    POE2SCOUT_API_KEY: str = ""
     GGG_POESESSID: str = ""
 
     # Rate limits
-    TRADE2_RATE_LIMIT_RPS: float = 1.0
     POE2SCOUT_RATE_LIMIT_RPS: float = 2.0
 
     # POE2 realm for poe2scout API
@@ -31,9 +28,7 @@ class Settings(BaseSettings):
 
     # Base URLs
     POE2SCOUT_BASE: ClassVar[str] = "https://poe2scout.com/api"
-    GGG_API_BASE: ClassVar[str] = "https://www.pathofexile.com/api"
     GGG_TRADE2_BASE: ClassVar[str] = "https://www.pathofexile.com/api/trade2"
-    POE2DB_URL: ClassVar[str] = "https://poe2db.tw"
 
     @property
     def league_list(self) -> list[str]:

@@ -96,9 +96,14 @@ class DealService:
             logger.info("DealService: ALERT %s %.1f%% OFF", item_name, discount_pct * 100)
 
     async def _get_market_avg(self, db, item_name: str) -> float | None:
+        from datetime import datetime, timezone, timedelta
+        cutoff = datetime.now(timezone.utc) - timedelta(days=7)
         result = await db.execute(
             select(func.avg(ItemSnapshot.chaos_value))
-            .where(ItemSnapshot.item_name == item_name)
+            .where(
+                ItemSnapshot.item_name == item_name,
+                ItemSnapshot.snapshot_at >= cutoff,
+            )
         )
         avg = result.scalar()
         return float(avg) if avg else None
