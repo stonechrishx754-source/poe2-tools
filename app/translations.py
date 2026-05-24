@@ -145,6 +145,9 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
     "OFF (badge)": {"zh": "OFF", "en": "OFF"},
     "market": {"zh": "市价", "en": "market"},
     "OFF %": {"zh": "OFF", "en": "OFF"},
+    "Edit Rule": {"zh": "编辑规则", "en": "Edit Rule"},
+    "Save": {"zh": "保存", "en": "Save"},
+    "Delete this rule?": {"zh": "确定删除此规则？", "en": "Delete this rule?"},
 
     # Purchases
     "Purchases": {"zh": "购买记录", "en": "Purchases"},

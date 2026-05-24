@@ -51,7 +51,7 @@
 
 <div id="rule-form-modal" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.6);z-index:1000;align-items:center;justify-content:center;">
     <div class="card p-4" style="width: 420px; max-width: 90vw;">
-        <h5 class="mb-3">{{ _("New Rule", locale) }}</h5>
+        <h5 class="mb-3" id="modal-title">{{ _("New Rule", locale) }}</h5>
         <div class="mb-3">
             <label class="form-label small">{{ _("Rule Name", locale) }}</label>
             <input class="form-control form-control-dark form-control-sm" id="rule-name" placeholder="{% if locale == "en" %}e.g. Cheap Headhunter{% else %}例如: 猎首{% endif %}">
@@ -72,7 +72,7 @@
         </div>
         <div class="d-flex gap-2 justify-content-end">
             <button class="btn btn-sm btn-outline-secondary" onclick="document.getElementById('rule-form-modal').style.display='none'">{{ _("Cancel", locale) }}</button>
-            <button class="btn btn-sm btn-outline-info" onclick="createRule()">{{ _("Create", locale) }}</button>
+            <button class="btn btn-sm btn-outline-info" onclick="createRule()" id="modal-submit">{{ _("Create", locale) }}</button>
         </div>
     </div>
 </div>
@@ -96,6 +96,8 @@ const i18n = {{ {
 }|tojson|safe }};
 function t(key) { return i18n[key] || key; }
 
+let ruleEditId = null;
+
 function loadRules() {
     fetch('/api/v1/watchlist').then(r => r.json()).then(rules => {
         const el = document.getElementById('rules-list');
@@ -104,16 +106,36 @@ function loadRules() {
             return;
         }
         el.innerHTML = rules.map(r => `
-            <div class="d-flex justify-content-between align-items-center p-2 rounded mb-1"
-                 style="background: var(--surface); cursor: pointer; border-left: 3px solid ${r.is_active ? '#3fb950' : '#f85149'};">
+            <div class="d-flex justify-content-between align-items-center p-2 rounded mb-1 rule-item"
+                 style="background: var(--surface); border-left: 3px solid ${r.is_active ? '#3fb950' : '#f85149'};">
                 <div>
                     <div style="font-size:.8rem;font-weight:600;">${r.name}</div>
                     <div style="font-size:.65rem;color:var(--muted);">${r.item_name} &le; ${r.max_price || '&infin;'}c</div>
                 </div>
-                <span class="badge ${r.is_active ? 'bg-success' : 'bg-secondary'}" style="font-size:.6rem;cursor:pointer;" onclick="toggleRule(${r.id}, ${!r.is_active})">${r.is_active ? t('ON') : t('OFF')}</span>
+                <div class="d-flex gap-1 align-items-center">
+                    <button class="btn btn-sm" style="font-size:.55rem;padding:0 .3rem;color:var(--muted);background:none;border:none;" onclick="editRule(${r.id},'${r.name}','${r.item_name||''}',${r.max_price||0},${(r.min_discount||0)*100})" title="Edit">&#9998;</button>
+                    <button class="btn btn-sm" style="font-size:.55rem;padding:0 .3rem;color:var(--error);background:none;border:none;" onclick="deleteRule(${r.id})" title="Delete">&#10005;</button>
+                    <span class="badge ${r.is_active ? 'bg-success' : 'bg-secondary'}" style="font-size:.6rem;cursor:pointer;" onclick="toggleRule(${r.id}, ${!r.is_active})">${r.is_active ? t('ON') : t('OFF')}</span>
+                </div>
             </div>
         `).join('');
     });
+}
+
+function editRule(id, name, itemName, maxPrice, minDiscount) {
+    ruleEditId = id;
+    document.getElementById('rule-name').value = name;
+    document.getElementById('rule-item').value = itemName;
+    document.getElementById('rule-max-price').value = maxPrice;
+    document.getElementById('rule-min-discount').value = minDiscount;
+    document.getElementById('modal-title').textContent = '{{ _("Edit Rule", locale) }}';
+    document.getElementById('modal-submit').textContent = '{{ _("Save", locale) }}';
+    document.getElementById('rule-form-modal').style.display = 'flex';
+}
+
+function deleteRule(id) {
+    if (!confirm('{{ _("Delete this rule?", locale) if locale == "zh" else "Delete this rule?" }}')) return;
+    fetch('/api/v1/watchlist/' + id, {method:'DELETE'}).then(() => loadRules());
 }
 
 function createRule() {
@@ -124,10 +146,19 @@ function createRule() {
         min_discount: parseFloat(document.getElementById('rule-min-discount').value) / 100 || 0.15,
         is_active: true, notify_sound: true, notify_browser: true, auto_copy_whisper: false, league_id: 1,
     };
-    fetch('/api/v1/watchlist', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)})
+    const method = ruleEditId ? 'PUT' : 'POST';
+    const url = ruleEditId ? '/api/v1/watchlist/' + ruleEditId : '/api/v1/watchlist';
+
+    fetch(url, {method:method,headers:{'Content-Type':'application/json'},body:JSON.stringify(data)})
         .then(r => r.json()).then(() => {
             document.getElementById('rule-form-modal').style.display = 'none';
-            ['rule-name','rule-item','rule-max-price'].forEach(id => document.getElementById(id).value = '');
+            document.getElementById('rule-name').value = '';
+            document.getElementById('rule-item').value = '';
+            document.getElementById('rule-max-price').value = '';
+            document.getElementById('rule-min-discount').value = '15';
+            document.getElementById('modal-title').textContent = '{{ _("New Rule", locale) }}';
+            document.getElementById('modal-submit').textContent = '{{ _("Create", locale) }}';
+            ruleEditId = null;
             loadRules();
         });
 }

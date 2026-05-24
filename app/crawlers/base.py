@@ -67,7 +67,6 @@ class BaseCrawler:
         if self._client is None:
             self._client = httpx.AsyncClient(
                 timeout=self.request_timeout,
-                headers={"User-Agent": "POE2-Analytics/0.1"},
             )
         return self._client
 
@@ -84,6 +83,9 @@ class BaseCrawler:
         Raises on final failure after exhausting retries.
         """
         last_error: Exception | None = None
+
+        # Defensive: pop accidentally-passed 'headers' from kwargs
+        kwargs.pop("headers", None)
 
         headers = {"User-Agent": "POE2-Analytics/0.1"}
         if extra_headers:

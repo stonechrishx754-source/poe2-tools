@@ -27,7 +27,7 @@ class Poe2ScoutCrawler(BaseCrawler):
 
     async def _get(self, path: str) -> dict[str, Any] | list[Any]:
         url = f"{BASE}{path}"
-        return await self.fetch(url, headers={"User-Agent": "POE2-Analytics/0.1"})
+        return await self.fetch(url, extra_headers={"User-Agent": "POE2-Analytics/0.1"})
 
     async def fetch_leagues(self) -> list[dict[str, Any]]:
         """GET /{Realm}/Leagues — list all leagues with prices."""
